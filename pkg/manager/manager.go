@@ -69,31 +69,30 @@ func NewManager(config Config) *Manager {
 	}
 
 	manager := &Manager{
-		appConfig: appCfg,
-		config:    config,
-		e2Manager: e2Manager,
-		slicingManager: rsm.NewManager(appCfg, rnibClient, ueStore, sliceStore, sliceAssocStore),
-		ueStore: ueStore,
-		rnibClient: rnibClient,
-		sliceStore: sliceStore,
+		appConfig:       appCfg,
+		config:          config,
+		e2Manager:       e2Manager,
+		slicingManager:  rsm.NewManager(appCfg, rnibClient, ueStore, sliceStore, sliceAssocStore),
+		ueStore:         ueStore,
+		rnibClient:      rnibClient,
+		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
-		ctrlReqChs: ctrlReqChs,
+		ctrlReqChs:      ctrlReqChs,
 	}
 	return manager
 }
 
-
 // Manager is a manager for the MHO xAPP service
 type Manager struct {
-	appConfig appConfig.Config
-	config    Config
-	e2Manager e2.Manager
-	rnibClient rnib.Client
-	slicingManager rsm.Manager
-	ueStore store.Store
-	sliceStore store.Store
+	appConfig       appConfig.Config
+	config          Config
+	e2Manager       e2.Manager
+	rnibClient      rnib.Client
+	slicingManager  rsm.Manager
+	ueStore         store.Store
+	sliceStore      store.Store
 	sliceAssocStore store.Store
-	ctrlReqChs map[string]chan *e2api.ControlMessage
+	ctrlReqChs      map[string]chan *e2api.ControlMessage
 }
 
 // Run starts the manager and the associated services

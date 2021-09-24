@@ -15,22 +15,25 @@ import (
 
 var logManager = logging.GetLogger("rsm", "manager")
 
+// Manager is the RSM manager struct
 type Manager struct {
-	ueStore store.Store
-	sliceStore store.Store
+	ueStore         store.Store
+	sliceStore      store.Store
 	sliceAssocStore store.Store
-	rnibClient rnib.Client
+	rnibClient      rnib.Client
 }
 
+// NewManager creates the RSM manager
 func NewManager(cfg *config.AppConfig, rnibClient rnib.Client, ueStore store.Store, sliceStore store.Store, sliceAssocStore store.Store) Manager {
 	return Manager{
-		ueStore: ueStore,
-		rnibClient: rnibClient,
-		sliceStore: sliceStore,
+		ueStore:         ueStore,
+		rnibClient:      rnibClient,
+		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
 	}
 }
 
+// Run runs the RSM manager
 func (m *Manager) Run(ctx context.Context) {
 	// ToDo: add
 	logManager.Info("running rsm manager")

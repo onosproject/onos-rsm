@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	prototypes "github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/proto"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/pdubuilder"
@@ -21,6 +20,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/monitoring"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"google.golang.org/protobuf/proto"
 	"strings"
 )
 
@@ -36,6 +36,7 @@ type Node interface {
 	Stop() error
 }
 
+// Manager is a E2 session manager
 type Manager struct {
 	e2client        e2client.Client
 	rnibClient      rnib.Client
@@ -45,7 +46,7 @@ type Manager struct {
 	ueStore         store.Store
 	sliceStore      store.Store
 	sliceAssocStore store.Store
-	CtrlReqChs map[string]chan *e2api.ControlMessage
+	CtrlReqChs      map[string]chan *e2api.ControlMessage
 }
 
 // NewManager creates a new subscription manager
@@ -63,7 +64,7 @@ func NewManager(opts ...Option) (Manager, error) {
 	e2Client := e2client.NewClient(
 		e2client.WithServiceModel(serviceModelName, serviceModelVersion),
 		e2client.WithAppID(appID),
-		e2client.WithE2TAddress(options.E2TService.Host, options.E2TService.Port),)
+		e2client.WithE2TAddress(options.E2TService.Host, options.E2TService.Port))
 
 	return Manager{
 		e2client:   e2Client,
@@ -77,7 +78,7 @@ func NewManager(opts ...Option) (Manager, error) {
 		ueStore:         options.App.UEStore,
 		sliceStore:      options.App.SliceStore,
 		sliceAssocStore: options.App.SliceAssocStore,
-		CtrlReqChs: options.App.CtrlReqChs,
+		CtrlReqChs:      options.App.CtrlReqChs,
 	}, nil
 
 }
@@ -232,8 +233,6 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 			}
 			go m.watchSliceChange(ctx, e2NodeID)
 			go m.watchSliceUEAssociation(ctx, e2NodeID)
-
-
 
 			//go func() {
 			//	err := m.createSubscription(ctx, e2NodeID, e2sm_rsm.RsmRicindicationTriggerType_RSM_RICINDICATION_TRIGGER_TYPE_PERIODIC_METRICS)

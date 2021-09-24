@@ -6,7 +6,6 @@ package monitoring
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	e2sm_rsm "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-rsm-ies"
@@ -14,10 +13,12 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
+	"google.golang.org/protobuf/proto"
 )
 
 var log = logging.GetLogger("monitoring")
 
+// NewMonitor returns new Monitor
 func NewMonitor(opts ...Option) *Monitor {
 	options := Options{}
 	for _, opt := range opts {
@@ -25,14 +26,15 @@ func NewMonitor(opts ...Option) *Monitor {
 	}
 
 	return &Monitor{
-		streamReader: options.Monitor.StreamReader,
-		appConfig: options.App.AppConfig,
-		nodeID: options.Monitor.NodeID,
-		rnibClient: options.App.RNIBClient,
+		streamReader:           options.Monitor.StreamReader,
+		appConfig:              options.App.AppConfig,
+		nodeID:                 options.Monitor.NodeID,
+		rnibClient:             options.App.RNIBClient,
 		ricIndEventTriggerType: options.App.EventTriggerType,
 	}
 }
 
+// Monitor is a struct to monitor indication messages
 type Monitor struct {
 	streamReader           broker.StreamReader
 	appConfig              *appConfig.AppConfig
@@ -80,11 +82,17 @@ func (m *Monitor) processIndication(ctx context.Context, indMsg e2api.Indication
 	}
 
 	if indPayload.GetIndicationMessageFormat1() != nil {
-		m.processMetricTypeMessage(ctx, indHeader.GetIndicationHeaderFormat1(), indPayload.GetIndicationMessageFormat1())
+		err = m.processMetricTypeMessage(ctx, indHeader.GetIndicationHeaderFormat1(), indPayload.GetIndicationMessageFormat1())
+		if err != nil {
+			return err
+		}
 	}
 
 	if indPayload.GetIndicationMessageFormat2() != nil {
-		m.processEmmEventMessage(ctx, indPayload.GetIndicationMessageFormat2())
+		err = m.processEmmEventMessage(ctx, indPayload.GetIndicationMessageFormat2())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

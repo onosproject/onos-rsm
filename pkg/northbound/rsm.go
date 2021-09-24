@@ -22,49 +22,54 @@ import (
 
 var log = logging.GetLogger("northbound")
 
+// NewService returns the new NBI service
 func NewService(ctrlReqChs map[string]chan *e2api.ControlMessage,
 	rnibClient rnib.Client, ueStore store.Store,
 	sliceStore store.Store, sliceAssocStore store.Store, ctrlMsgHandler e2.ControlMessageHandler) service.Service {
 	return &Service{
-		ctrlReqChs: ctrlReqChs,
-		rnibClient: rnibClient,
-		ueStore: ueStore,
-		sliceStore: sliceStore,
+		ctrlReqChs:      ctrlReqChs,
+		rnibClient:      rnibClient,
+		ueStore:         ueStore,
+		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
-		ctrlMsgHandler: ctrlMsgHandler,
+		ctrlMsgHandler:  ctrlMsgHandler,
 	}
 }
 
+// Service represents the NBI service for RSM xAPP
 type Service struct {
-	ctrlReqChs map[string]chan *e2api.ControlMessage
-	rnibClient rnib.Client
-	ueStore store.Store
-	sliceStore store.Store
+	ctrlReqChs      map[string]chan *e2api.ControlMessage
+	rnibClient      rnib.Client
+	ueStore         store.Store
+	sliceStore      store.Store
 	sliceAssocStore store.Store
-	ctrlMsgHandler e2.ControlMessageHandler
+	ctrlMsgHandler  e2.ControlMessageHandler
 }
 
+// Register registers the NBI service
 func (s Service) Register(r *grpc.Server) {
 	server := &Server{
-		ctrlReqChs: s.ctrlReqChs,
-		rnibClient: s.rnibClient,
-		ueStore: s.ueStore,
-		sliceStore: s.sliceStore,
+		ctrlReqChs:      s.ctrlReqChs,
+		rnibClient:      s.rnibClient,
+		ueStore:         s.ueStore,
+		sliceStore:      s.sliceStore,
 		sliceAssocStore: s.sliceAssocStore,
-		ctrlMsgHandler: s.ctrlMsgHandler,
+		ctrlMsgHandler:  s.ctrlMsgHandler,
 	}
 	rsmapi.RegisterRsmServer(r, server)
 }
 
+// Server is a struct for NBI server
 type Server struct {
-	ctrlReqChs map[string]chan *e2api.ControlMessage
-	rnibClient rnib.Client
-	ueStore store.Store
-	sliceStore store.Store
+	ctrlReqChs      map[string]chan *e2api.ControlMessage
+	rnibClient      rnib.Client
+	ueStore         store.Store
+	sliceStore      store.Store
 	sliceAssocStore store.Store
-	ctrlMsgHandler e2.ControlMessageHandler
+	ctrlMsgHandler  e2.ControlMessageHandler
 }
 
+// GetSlices gets slices
 func (s Server) GetSlices(ctx context.Context, request *rsmapi.GetSlicesRequest) (*rsmapi.GetSliceResponse, error) {
 	log.Infof("Called GetSlices: %v", request)
 	return &rsmapi.GetSliceResponse{
@@ -75,6 +80,7 @@ func (s Server) GetSlices(ctx context.Context, request *rsmapi.GetSlicesRequest)
 	}, nil
 }
 
+// CreateSlices creats a slice
 func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequest) (*rsmapi.CreateSliceResponse, error) {
 	log.Infof("Called CreateSlice: %v", request)
 	sliceID, err := strconv.Atoi(request.SliceId)
@@ -126,7 +132,7 @@ func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequ
 		},
 		SliceConfigParameters: &e2sm_rsm.SliceParameters{
 			SchedulerType: sliceSchedulerType,
-			Weight: &weight,
+			Weight:        &weight,
 		},
 		SliceType: sliceType,
 	}
@@ -147,6 +153,7 @@ func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequ
 	}, nil
 }
 
+// UpdateSlice updates a slice
 func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequest) (*rsmapi.UpdateSliceResponse, error) {
 	log.Infof("Called UpdateSlice: %v", request)
 	sliceID, err := strconv.Atoi(request.SliceId)
@@ -198,7 +205,7 @@ func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequ
 		},
 		SliceConfigParameters: &e2sm_rsm.SliceParameters{
 			SchedulerType: sliceSchedulerType,
-			Weight: &weight,
+			Weight:        &weight,
 		},
 		SliceType: sliceType,
 	}
@@ -219,6 +226,7 @@ func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequ
 	}, nil
 }
 
+// DeleteSlice deletes a slice
 func (s Server) DeleteSlice(ctx context.Context, request *rsmapi.DeleteSliceRequest) (*rsmapi.DeleteSliceResponse, error) {
 	log.Infof("Called DeleteSlice: %v", request)
 	sliceID, err := strconv.Atoi(request.SliceId)
@@ -263,6 +271,7 @@ func (s Server) DeleteSlice(ctx context.Context, request *rsmapi.DeleteSliceRequ
 	}, nil
 }
 
+// GetUeSliceAssociation gets slice association
 func (s Server) GetUeSliceAssociation(ctx context.Context, request *rsmapi.GetUeSliceAssociationRequest) (*rsmapi.GetUeSliceAssociationResponse, error) {
 	log.Infof("Called GetUESliceAssociation: %v", request)
 	return &rsmapi.GetUeSliceAssociationResponse{
@@ -273,6 +282,7 @@ func (s Server) GetUeSliceAssociation(ctx context.Context, request *rsmapi.GetUe
 	}, nil
 }
 
+// SetUeSliceAssociation sets a slice association
 func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUeSliceAssociationRequest) (*rsmapi.SetUeSliceAssociationResponse, error) {
 	log.Infof("Called SetUeSliceAssociation: %v", request)
 	cmdType := e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_UE_ASSOCIATE
@@ -300,12 +310,11 @@ func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUe
 		hasUlSliceID = true
 	}
 
-
-	var reqUeId int64
-	hasValidUeId := false
+	var reqUeID int64
+	hasValidUeID := false
 	for _, ueid := range request.UeId {
 		if ueid.GetType() == rsmapi.UeIdType_UE_ID_TYPE_DU_UE_F1_AP_ID {
-			hasValidUeId = true
+			hasValidUeID = true
 			id, err := strconv.Atoi(ueid.GetUeId())
 			if err != nil {
 				return &rsmapi.SetUeSliceAssociationResponse{
@@ -315,15 +324,15 @@ func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUe
 					},
 				}, nil
 			}
-			reqUeId = int64(id)
+			reqUeID = int64(id)
 		}
 	}
 
-	if !hasValidUeId {
+	if !hasValidUeID {
 		return &rsmapi.SetUeSliceAssociationResponse{
 			Ack: &rsmapi.Ack{
 				Success: false,
-				Cause:   fmt.Sprintf("need du-ue-f1ap-id"),
+				Cause:   "need du-ue-f1ap-id",
 			},
 		}, nil
 	}
@@ -331,7 +340,7 @@ func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUe
 	ueID := &e2sm_rsm.UeIdentity{
 		UeIdentity: &e2sm_rsm.UeIdentity_DuUeF1ApId{
 			DuUeF1ApId: &e2sm_rsm.DuUeF1ApId{
-				Value: reqUeId,
+				Value: reqUeID,
 			},
 		},
 	}
@@ -357,7 +366,7 @@ func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUe
 		DownLinkSliceId: &e2sm_rsm.SliceIdassoc{
 			Value: int64(dlSliceID),
 		},
-		UeId: ueID,
+		UeId:     ueID,
 		BearerId: bearerIDs,
 	}
 	if hasUlSliceID {

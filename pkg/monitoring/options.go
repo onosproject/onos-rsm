@@ -55,37 +55,43 @@ func newOption(f func(*Options)) Option {
 	}
 }
 
+// WithNode sets node
 func WithNode(node e2client.Node) Option {
 	return newOption(func(options *Options) {
 		options.Monitor.Node = node
 	})
 }
 
+// WithNodeID sets node ID
 func WithNodeID(nodeID topoapi.ID) Option {
 	return newOption(func(options *Options) {
 		options.Monitor.NodeID = nodeID
 	})
 }
 
+// WithStreamReader sets stream reader
 func WithStreamReader(streamReader broker.StreamReader) Option {
 	return newOption(func(options *Options) {
 		options.Monitor.StreamReader = streamReader
 	})
 }
 
+// WithAppConfig sets app configs
 func WithAppConfig(cfg *appConfig.AppConfig) Option {
 	return newOption(func(options *Options) {
 		options.App.AppConfig = cfg
 	})
 }
 
-func WithRNIBClient (client rnib.Client) Option {
+// WithRNIBClient sets rnib client
+func WithRNIBClient(client rnib.Client) Option {
 	return newOption(func(options *Options) {
 		options.App.RNIBClient = client
 	})
 }
 
-func WithRicIndicationTriggerType (triggerType e2sm_rsm.RsmRicindicationTriggerType) Option {
+// WithRicIndicationTriggerType sets ric indication event trigger type
+func WithRicIndicationTriggerType(triggerType e2sm_rsm.RsmRicindicationTriggerType) Option {
 	return newOption(func(options *Options) {
 		options.App.EventTriggerType = triggerType
 	})
