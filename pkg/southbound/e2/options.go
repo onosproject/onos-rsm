@@ -154,30 +154,35 @@ func WithBroker(broker broker.Broker) Option {
 	})
 }
 
+// WithRnibClient sets rnib client
 func WithRnibClient(rnibClient rnib.Client) Option {
 	return newOption(func(options *Options) {
 		options.App.RnibClient = rnibClient
 	})
 }
 
+// WithUEStore sets ue store
 func WithUEStore(s store.Store) Option {
 	return newOption(func(options *Options) {
 		options.App.UEStore = s
 	})
 }
 
+// WithSliceStore sets slice store
 func WithSliceStore(s store.Store) Option {
 	return newOption(func(options *Options) {
 		options.App.SliceStore = s
 	})
 }
 
+// WithSliceAssocStore sets slice assoc store
 func WithSliceAssocStore(s store.Store) Option {
 	return newOption(func(options *Options) {
 		options.App.SliceAssocStore = s
 	})
 }
 
+// WithCtrlReqChs sets the map of control request message channel
 func WithCtrlReqChs(m map[string]chan *e2api.ControlMessage) Option {
 	return newOption(func(options *Options) {
 		options.App.CtrlReqChs = m

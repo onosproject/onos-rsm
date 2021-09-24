@@ -20,9 +20,13 @@ const (
 	ReportPeriodConfigPath = "/report_period/interval"
 )
 
+// Config is an interface for app configuration values
 type Config interface {
+	// GetReportPeriodWithPath gets report period with a given path
 	GetReportPeriodWithPath(path string) (uint64, error)
+	// GetReportPeriod gets report period
 	GetReportPeriod() (uint64, error)
+	// Watch watches config changes
 	Watch(context.Context, chan event.Event) error
 }
 
@@ -44,7 +48,6 @@ type AppConfig struct {
 	appConfig *app.Config
 }
 
-// Watch watches config changes
 func (c *AppConfig) Watch(ctx context.Context, ch chan event.Event) error {
 	err := c.appConfig.Watch(ctx, ch)
 	if err != nil {
@@ -53,7 +56,6 @@ func (c *AppConfig) Watch(ctx context.Context, ch chan event.Event) error {
 	return nil
 }
 
-// GetReportPeriodWithPath gets report period with a given path
 func (c *AppConfig) GetReportPeriodWithPath(path string) (uint64, error) {
 	interval, _ := c.appConfig.Get(path)
 	val, err := configutils.ToUint64(interval.Value)
@@ -65,7 +67,6 @@ func (c *AppConfig) GetReportPeriodWithPath(path string) (uint64, error) {
 	return val, nil
 }
 
-// GetReportPeriod gets report period
 func (c *AppConfig) GetReportPeriod() (uint64, error) {
 	interval, _ := c.appConfig.Get(ReportPeriodConfigPath)
 	val, err := configutils.ToUint64(interval.Value)

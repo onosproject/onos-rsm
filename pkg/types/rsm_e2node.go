@@ -8,7 +8,8 @@ import (
 	"github.com/onosproject/onos-api/go/onos/topo"
 )
 
+// RsmE2Node has E2 node information
 type RsmE2Node struct {
-	RsmE2NodeID string
+	RsmE2NodeID       string
 	RsmNodeCapability []topo.RSMNodeSlicingCapabilityItem
 }

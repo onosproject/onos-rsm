@@ -71,9 +71,9 @@ func (s *store) Delete(ctx context.Context, key string) error {
 	}
 	delete(s.records, key)
 	s.watchers.Send(Event{
-		Key: key,
+		Key:   key,
 		Value: s.records[key],
-		Type: Deleted,
+		Type:  Deleted,
 	})
 	return nil
 }

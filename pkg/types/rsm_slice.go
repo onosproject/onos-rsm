@@ -9,16 +9,17 @@ import (
 	e2sm_rsm_ies "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-rsm-ies"
 )
 
+// SliceUEAssoc has ue slice association information
 type SliceUEAssoc struct {
 	SliceUEAssocID uuid.UUID
-	RsmUE RsmUE
-	RsmE2Node RsmE2Node
-	Slice Slice
+	RsmUE          RsmUE
+	RsmE2Node      RsmE2Node
+	Slice          Slice
 }
 
+// Slice has slice information
 type Slice struct {
-	SliceID int32
-	SliceDesc string
+	SliceID               int32
+	SliceDesc             string
 	SliceConfigParameters e2sm_rsm_ies.SliceParameters
 }
-

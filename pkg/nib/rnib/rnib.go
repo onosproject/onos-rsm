@@ -5,8 +5,9 @@
 package rnib
 
 import (
+	"bytes"
 	"context"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -69,12 +70,16 @@ func (c *Client) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topo
 	}
 
 	e2Node := &topoapi.E2Node{}
-	object.GetAspect(e2Node)
+	err = object.GetAspect(e2Node)
+	if err != nil {
+		return nil, err
+	}
 
 	return e2Node, nil
 
 }
 
+// GetSupportedSlicingConfigTypes gets supported slicing config types
 func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error) {
 	result := make([]*topoapi.RSMSupportedSlicingConfigItem, 0)
 	e2Node, err := c.GetE2NodeAspects(ctx, nodeID)
@@ -85,14 +90,16 @@ func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topo
 	for smName, sm := range e2Node.GetServiceModels() {
 		for _, ranFunc := range sm.GetRanFunctions() {
 			rsmRanFunc := &topoapi.RSMRanFunction{}
-			err = proto.Unmarshal(ranFunc.GetValue(), rsmRanFunc)
+			reader := bytes.NewReader(ranFunc.GetValue())
+			err = jsonpb.Unmarshal(reader, rsmRanFunc)
+			//err = proto.Unmarshal(ranFunc.GetValue(), rsmRanFunc)
 			if err != nil {
 				log.Debugf("RanFunction for SM - %v, URL - %v does not have RSM RAN Function Description", smName, ranFunc.GetTypeUrl())
 				continue
 			}
 			for _, cap := range rsmRanFunc.GetRicSlicingNodeCapabilityList() {
-				for _, cfg := range cap.GetSupportedConfig() {
-					result = append(result, cfg)
+				for i := 0; i < len(cap.GetSupportedConfig()); i++ {
+					result = append(result, cap.GetSupportedConfig()[i])
 				}
 			}
 		}
@@ -116,7 +123,10 @@ func (c *Client) GetCells(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.E2
 		targetEntity := obj.GetEntity()
 		if targetEntity.GetKindID() == topoapi.E2CELL {
 			cellObject := &topoapi.E2Cell{}
-			obj.GetAspect(cellObject)
+			err = obj.GetAspect(cellObject)
+			if err != nil {
+				return nil, err
+			}
 			cells = append(cells, cellObject)
 		}
 	}
