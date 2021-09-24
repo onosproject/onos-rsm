@@ -14,8 +14,6 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
-	"github.com/onosproject/onos-rsm/pkg/store"
-	"github.com/onosproject/onos-rsm/pkg/utils"
 )
 
 var log = logging.GetLogger("monitoring")
@@ -29,9 +27,6 @@ func NewMonitor(opts ...Option) *Monitor {
 	return &Monitor{
 		streamReader: options.Monitor.StreamReader,
 		appConfig: options.App.AppConfig,
-		cellStore: options.App.CellStore,
-		ueStore: options.App.UEStore,
-		metricStore: options.App.MetricStore,
 		nodeID: options.Monitor.NodeID,
 		rnibClient: options.App.RNIBClient,
 		ricIndEventTriggerType: options.App.EventTriggerType,
@@ -41,9 +36,6 @@ func NewMonitor(opts ...Option) *Monitor {
 type Monitor struct {
 	streamReader           broker.StreamReader
 	appConfig              *appConfig.AppConfig
-	cellStore              store.Store
-	ueStore                store.Store
-	metricStore            store.Store
 	nodeID                 topoapi.ID
 	rnibClient             rnib.Client
 	ricIndEventTriggerType e2sm_rsm.RsmRicindicationTriggerType
@@ -99,17 +91,6 @@ func (m *Monitor) processIndication(ctx context.Context, indMsg e2api.Indication
 }
 
 func (m *Monitor) processMetricTypeMessage(ctx context.Context, indHdr *e2sm_rsm.E2SmRsmIndicationHeaderFormat1, indMsg *e2sm_rsm.E2SmRsmIndicationMessageFormat1) error {
-	key, err := utils.CreateCgiKey(indHdr.GetCgi())
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	_, err = m.metricStore.Put(ctx, key, *indMsg)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
 
 	log.Infof("Received indication message (Metric): %v", indMsg)
 
@@ -117,19 +98,6 @@ func (m *Monitor) processMetricTypeMessage(ctx context.Context, indHdr *e2sm_rsm
 }
 
 func (m *Monitor) processEmmEventMessage(ctx context.Context, indMsg *e2sm_rsm.E2SmRsmIndicationMessageFormat2) error {
-	key, err := utils.CreateUEKey(indMsg.GetUeIdlist())
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	_, err = m.ueStore.Put(ctx, key, indMsg)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	log.Infof("Received indication message (EMM): %v", indMsg)
 
 	return nil
 }

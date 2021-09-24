@@ -6,12 +6,16 @@ package rnib
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 )
+
+var log = logging.GetLogger("rnib")
 
 // TopoClient R-NIB client interface
 type TopoClient interface {
@@ -63,11 +67,37 @@ func (c *Client) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topo
 	if err != nil {
 		return nil, err
 	}
+
 	e2Node := &topoapi.E2Node{}
 	object.GetAspect(e2Node)
 
 	return e2Node, nil
 
+}
+
+func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error) {
+	result := make([]*topoapi.RSMSupportedSlicingConfigItem, 0)
+	e2Node, err := c.GetE2NodeAspects(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	for smName, sm := range e2Node.GetServiceModels() {
+		for _, ranFunc := range sm.GetRanFunctions() {
+			rsmRanFunc := &topoapi.RSMRanFunction{}
+			err = proto.Unmarshal(ranFunc.GetValue(), rsmRanFunc)
+			if err != nil {
+				log.Debugf("RanFunction for SM - %v, URL - %v does not have RSM RAN Function Description", smName, ranFunc.GetTypeUrl())
+				continue
+			}
+			for _, cap := range rsmRanFunc.GetRicSlicingNodeCapabilityList() {
+				for _, cfg := range cap.GetSupportedConfig() {
+					result = append(result, cfg)
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 // GetCells get list of cells for each E2 node

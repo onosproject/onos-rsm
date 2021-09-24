@@ -5,8 +5,10 @@
 package e2
 
 import (
+	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
+	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
 )
 
@@ -29,11 +31,16 @@ type AppOptions struct {
 
 	Broker broker.Broker
 
-	MetricStore store.Store
+	RnibClient rnib.Client
 
 	UEStore store.Store
 
-	CellStore store.Store
+	SliceStore store.Store
+
+	SliceAssocStore store.Store
+
+	// Ctrl chan - to be removed; now it's just temporal channel map
+	CtrlReqChs map[string]chan *e2api.ControlMessage
 }
 
 // ServiceOptions are the options for a E2T service
@@ -147,23 +154,32 @@ func WithBroker(broker broker.Broker) Option {
 	})
 }
 
-// WithCellStore sets cell store
-func WithCellStore(s store.Store) Option {
+func WithRnibClient(rnibClient rnib.Client) Option {
 	return newOption(func(options *Options) {
-		options.App.CellStore = s
+		options.App.RnibClient = rnibClient
 	})
 }
 
-// WithUEStore sets ue store
 func WithUEStore(s store.Store) Option {
 	return newOption(func(options *Options) {
 		options.App.UEStore = s
 	})
 }
 
-// WithMetricStore sets metric store
-func WithMetricStore(s store.Store) Option {
+func WithSliceStore(s store.Store) Option {
 	return newOption(func(options *Options) {
-		options.App.MetricStore = s
+		options.App.SliceStore = s
+	})
+}
+
+func WithSliceAssocStore(s store.Store) Option {
+	return newOption(func(options *Options) {
+		options.App.SliceAssocStore = s
+	})
+}
+
+func WithCtrlReqChs(m map[string]chan *e2api.ControlMessage) Option {
+	return newOption(func(options *Options) {
+		options.App.CtrlReqChs = m
 	})
 }

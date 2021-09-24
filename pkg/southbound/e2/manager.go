@@ -9,19 +9,18 @@ import (
 	"fmt"
 	prototypes "github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
-	"github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/pdubuilder"
-	e2sm_rsm "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-rsm-ies"
-	"github.com/onosproject/onos-rsm/pkg/monitoring"
-	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
-	"github.com/onosproject/onos-rsm/pkg/store"
-
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
+	"github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/pdubuilder"
+	e2sm_rsm "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-rsm-ies"
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	e2client "github.com/onosproject/onos-ric-sdk-go/pkg/e2/v1beta1"
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
+	"github.com/onosproject/onos-rsm/pkg/monitoring"
+	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
+	"github.com/onosproject/onos-rsm/pkg/store"
 	"strings"
 )
 
@@ -38,14 +37,15 @@ type Node interface {
 }
 
 type Manager struct {
-	e2client     e2client.Client
-	rnibClient   rnib.Client
-	serviceModel ServiceModelOptions
-	appConfig    *appConfig.AppConfig
-	streams      broker.Broker
-	ueStore      store.Store
-	cellStore    store.Store
-	metricStore  store.Store
+	e2client        e2client.Client
+	rnibClient      rnib.Client
+	serviceModel    ServiceModelOptions
+	appConfig       *appConfig.AppConfig
+	streams         broker.Broker
+	ueStore         store.Store
+	sliceStore      store.Store
+	sliceAssocStore store.Store
+	CtrlReqChs map[string]chan *e2api.ControlMessage
 }
 
 // NewManager creates a new subscription manager
@@ -63,25 +63,21 @@ func NewManager(opts ...Option) (Manager, error) {
 	e2Client := e2client.NewClient(
 		e2client.WithServiceModel(serviceModelName, serviceModelVersion),
 		e2client.WithAppID(appID),
-		e2client.WithE2TAddress(options.E2TService.Host, options.E2TService.Port))
-
-	rnibClient, err := rnib.NewClient()
-	if err != nil {
-		return Manager{}, err
-	}
+		e2client.WithE2TAddress(options.E2TService.Host, options.E2TService.Port),)
 
 	return Manager{
 		e2client:   e2Client,
-		rnibClient: rnibClient,
+		rnibClient: options.App.RnibClient,
 		serviceModel: ServiceModelOptions{
 			Name:    options.ServiceModel.Name,
 			Version: options.ServiceModel.Version,
 		},
-		appConfig:   options.App.AppConfig,
-		streams:     options.App.Broker,
-		ueStore:     options.App.UEStore,
-		cellStore:   options.App.CellStore,
-		metricStore: options.App.MetricStore,
+		appConfig:       options.App.AppConfig,
+		streams:         options.App.Broker,
+		ueStore:         options.App.UEStore,
+		sliceStore:      options.App.SliceStore,
+		sliceAssocStore: options.App.SliceAssocStore,
+		CtrlReqChs: options.App.CtrlReqChs,
 	}, nil
 
 }
@@ -159,13 +155,13 @@ func (m *Manager) createSubscription(ctx context.Context, e2nodeID topoapi.ID, e
 	ch := make(chan e2api.Indication)
 	node := m.e2client.Node(e2client.NodeID(e2nodeID))
 	subName := fmt.Sprintf("onos-rsm-subscription-%s", eventTrigger)
-	log.Infof("eventTrigger: %v", eventTriggerData)
 	subSpec := e2api.SubscriptionSpec{
 		EventTrigger: e2api.EventTrigger{
 			Payload: eventTriggerData,
 		},
+		Actions: m.createSubscriptionActions(),
 	}
-	log.Infof("subSpec: %v", subSpec)
+	log.Debugf("subSpec: %v", subSpec)
 
 	channelID, err := node.Subscribe(ctx, subName, subSpec, ch)
 	if err != nil {
@@ -184,9 +180,6 @@ func (m *Manager) createSubscription(ctx context.Context, e2nodeID topoapi.ID, e
 		monitoring.WithNodeID(e2nodeID),
 		monitoring.WithStreamReader(streamReader),
 		monitoring.WithRNIBClient(m.rnibClient),
-		monitoring.WithCellStore(m.cellStore),
-		monitoring.WithUEStore(m.ueStore),
-		monitoring.WithMetricStore(m.metricStore),
 		monitoring.WithRicIndicationTriggerType(eventTrigger))
 
 	err = monitor.Start(ctx)
@@ -211,18 +204,43 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 			log.Infof("New E2 connection detected")
 			relation := topoEvent.Object.Obj.(*topoapi.Object_Relation)
 			e2NodeID := relation.Relation.TgtEntityID
-			go func() {
-				err := m.createSubscription(ctx, e2NodeID, e2sm_rsm.RsmRicindicationTriggerType_RSM_RICINDICATION_TRIGGER_TYPE_PERIODIC_METRICS)
-				if err != nil {
-					log.Warn(err)
+			log.Debugf("E2NodeID %v connected", e2NodeID)
+			rsmSupportedCfgs, err := m.rnibClient.GetSupportedSlicingConfigTypes(ctx, e2NodeID)
+			if err != nil {
+				return err
+			}
+
+			log.Debugf("RSM Supported Cfgs - %v", rsmSupportedCfgs)
+
+			for _, cfg := range rsmSupportedCfgs {
+				if cfg.GetSlicingConfigType() == topoapi.E2SmRsmCommand_E2_SM_RSM_COMMAND_EVENT_TRIGGERS {
+					go func() {
+						err := m.createSubscription(ctx, e2NodeID, e2sm_rsm.RsmRicindicationTriggerType_RSM_RICINDICATION_TRIGGER_TYPE_UPON_EMM_EVENT)
+						if err != nil {
+							log.Warn(err)
+						}
+					}()
+					break
 				}
-			}()
-			go func() {
-				err := m.createSubscription(ctx, e2NodeID, e2sm_rsm.RsmRicindicationTriggerType_RSM_RICINDICATION_TRIGGER_TYPE_UPON_EMM_EVENT)
-				if err != nil {
-					log.Warn(err)
+				if cfg.GetSlicingConfigType() == topoapi.E2SmRsmCommand_E2_SM_RSM_COMMAND_UE_ASSOCIATE ||
+					cfg.GetSlicingConfigType() == topoapi.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_CREATE ||
+					cfg.GetSlicingConfigType() == topoapi.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_UPDATE ||
+					cfg.GetSlicingConfigType() == topoapi.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_DELETE {
+					m.CtrlReqChs[string(e2NodeID)] = make(chan *e2api.ControlMessage)
+					go m.watchCtrlChan(ctx, e2NodeID)
 				}
-			}()
+			}
+			go m.watchSliceChange(ctx, e2NodeID)
+			go m.watchSliceUEAssociation(ctx, e2NodeID)
+
+
+
+			//go func() {
+			//	err := m.createSubscription(ctx, e2NodeID, e2sm_rsm.RsmRicindicationTriggerType_RSM_RICINDICATION_TRIGGER_TYPE_PERIODIC_METRICS)
+			//	if err != nil {
+			//		log.Warn(err)
+			//	}
+			//}()
 			//go m.watchRSMChanges(ctx, e2NodeID)
 		}
 	}
@@ -230,9 +248,41 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 	return nil
 }
 
-//func (m *Manager) watchRSMChanges(ctx context.Context, e2nodeID topoapi.ID) {
-//
-//}
+func (m *Manager) watchCtrlChan(ctx context.Context, e2NodeID topoapi.ID) {
+	for ctrlReqMsg := range m.CtrlReqChs[string(e2NodeID)] {
+		go func(ctrlReqMsg *e2api.ControlMessage) {
+			node := m.e2client.Node(e2client.NodeID(e2NodeID))
+			ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg)
+			if err != nil {
+				log.Warn("Error sending control message - %v", err)
+			} else if ctrlRespMsg == nil {
+				log.Warn("Ctrl Resp message is nil")
+			}
+		}(ctrlReqMsg)
+	}
+}
+
+func (m *Manager) watchSliceChange(ctx context.Context, e2NodeID topoapi.ID) {
+	//ch := make(chan store.Event)
+	//err := m.sliceAssocStore.Watch(ctx, ch)
+	//if err != nil {
+	//	log.Errorf("Failed to watch slice change event")
+	//	return
+	//}
+	//
+	//for e := range ch {
+	//	switch e.Type {
+	//	case store.Created:
+	//	case store.Updated:
+	//	case store.Deleted:
+	//	default:
+	//	}
+	//}
+}
+
+func (m *Manager) watchSliceUEAssociation(ctx context.Context, e2NodeID topoapi.ID) {
+
+}
 
 func (m *Manager) createEventTrigger(triggerType e2sm_rsm.RsmRicindicationTriggerType) ([]byte, error) {
 	// period is not defined yet

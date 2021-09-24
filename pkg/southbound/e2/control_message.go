@@ -15,8 +15,11 @@ import (
 
 var logControl = logging.GetLogger("e2", "control")
 
+func NewControlMessageHandler() ControlMessageHandler {
+	return ControlMessageHandler{}
+}
+
 type ControlMessageHandler struct {
-	NodeID string
 }
 
 func (c *ControlMessageHandler) CreateControlRequest(cmdType e2sm_rsm.E2SmRsmCommand, sliceConfig *e2sm_rsm.SliceConfig, sliceAssoc *e2sm_rsm.SliceAssociate) (*e2api.ControlMessage, error) {
@@ -60,7 +63,7 @@ func (c *ControlMessageHandler) CreateControlPayload(cmdType e2sm_rsm.E2SmRsmCom
 			return nil, err
 		}
 	case e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_DELETE:
-		msg = pdubuilder.CreateE2SmRsmControlMessageSliceDelete(sliceConfig.GetSliceId().GetValue())
+		msg = pdubuilder.CreateE2SmRsmControlMessageSliceDelete(sliceConfig.GetSliceId().GetValue(), sliceConfig.GetSliceType())
 		msgProtoBytes, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, err

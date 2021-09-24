@@ -6,11 +6,14 @@ package manager
 
 import (
 	"context"
+	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	app "github.com/onosproject/onos-ric-sdk-go/pkg/config/app/default"
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
+	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
+	nbi "github.com/onosproject/onos-rsm/pkg/northbound"
 	"github.com/onosproject/onos-rsm/pkg/rsm"
 	"github.com/onosproject/onos-rsm/pkg/southbound/e2"
 	"github.com/onosproject/onos-rsm/pkg/store"
@@ -38,9 +41,15 @@ func NewManager(config Config) *Manager {
 		log.Warn(err)
 	}
 	subscriptionBroker := broker.NewBroker()
+
 	ueStore := store.NewStore()
-	cellStore := store.NewStore()
-	metricStore := store.NewStore()
+	sliceStore := store.NewStore()
+	sliceAssocStore := store.NewStore()
+	rnibClient, err := rnib.NewClient()
+	ctrlReqChs := make(map[string]chan *e2api.ControlMessage)
+	if err != nil {
+		log.Warn(err)
+	}
 
 	e2Manager, err := e2.NewManager(
 		e2.WithE2TAddress("onos-e2t", 5150),
@@ -48,9 +57,11 @@ func NewManager(config Config) *Manager {
 		e2.WithAppConfig(appCfg),
 		e2.WithAppID("onos-rsm"),
 		e2.WithBroker(subscriptionBroker),
+		e2.WithRnibClient(rnibClient),
 		e2.WithUEStore(ueStore),
-		e2.WithCellStore(cellStore),
-		e2.WithMetricStore(metricStore),
+		e2.WithSliceStore(sliceStore),
+		e2.WithSliceAssocStore(sliceAssocStore),
+		e2.WithCtrlReqChs(ctrlReqChs),
 	)
 
 	if err != nil {
@@ -61,10 +72,12 @@ func NewManager(config Config) *Manager {
 		appConfig: appCfg,
 		config:    config,
 		e2Manager: e2Manager,
-		slicingManager: rsm.NewManager(appCfg, ueStore, cellStore, metricStore),
-		ueStore:   ueStore,
-		cellStore: cellStore,
-		metricStore: metricStore,
+		slicingManager: rsm.NewManager(appCfg, rnibClient, ueStore, sliceStore, sliceAssocStore),
+		ueStore: ueStore,
+		rnibClient: rnibClient,
+		sliceStore: sliceStore,
+		sliceAssocStore: sliceAssocStore,
+		ctrlReqChs: ctrlReqChs,
 	}
 	return manager
 }
@@ -75,10 +88,12 @@ type Manager struct {
 	appConfig appConfig.Config
 	config    Config
 	e2Manager e2.Manager
+	rnibClient rnib.Client
 	slicingManager rsm.Manager
-	ueStore   store.Store
-	cellStore store.Store
-	metricStore store.Store
+	ueStore store.Store
+	sliceStore store.Store
+	sliceAssocStore store.Store
+	ctrlReqChs map[string]chan *e2api.ControlMessage
 }
 
 // Run starts the manager and the associated services
@@ -122,7 +137,7 @@ func (m *Manager) startNorthboundServer() error {
 		northbound.SecurityConfig{}))
 
 	//TODO - RSM northbound service
-	//s.AddService(nbi.NewService(m.ueStore, m.cellStore))
+	s.AddService(nbi.NewService(m.ctrlReqChs, m.rnibClient, m.ueStore, m.sliceStore, m.sliceAssocStore, e2.NewControlMessageHandler()))
 
 	doneCh := make(chan error)
 	go func() {

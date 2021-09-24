@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-rsm/pkg/config"
+	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
 	"time"
 )
@@ -15,16 +16,18 @@ import (
 var logManager = logging.GetLogger("rsm", "manager")
 
 type Manager struct {
-	UeStore      store.Store
-	CellStore    store.Store
-	MetricStore  store.Store
+	ueStore store.Store
+	sliceStore store.Store
+	sliceAssocStore store.Store
+	rnibClient rnib.Client
 }
 
-func NewManager(cfg *config.AppConfig, ueStore store.Store, cellStore store.Store, metricStore store.Store) Manager {
+func NewManager(cfg *config.AppConfig, rnibClient rnib.Client, ueStore store.Store, sliceStore store.Store, sliceAssocStore store.Store) Manager {
 	return Manager{
-		UeStore:      ueStore,
-		CellStore:    cellStore,
-		MetricStore:  metricStore,
+		ueStore: ueStore,
+		rnibClient: rnibClient,
+		sliceStore: sliceStore,
+		sliceAssocStore: sliceAssocStore,
 	}
 }
 

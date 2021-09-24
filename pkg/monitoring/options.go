@@ -11,7 +11,6 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
-	"github.com/onosproject/onos-rsm/pkg/store"
 )
 
 // Options monitor options
@@ -24,12 +23,6 @@ type Options struct {
 // AppOptions application options
 type AppOptions struct {
 	AppConfig *appConfig.AppConfig
-
-	CellStore store.Store
-
-	UEStore store.Store
-
-	MetricStore store.Store
 
 	RNIBClient rnib.Client
 
@@ -83,24 +76,6 @@ func WithStreamReader(streamReader broker.StreamReader) Option {
 func WithAppConfig(cfg *appConfig.AppConfig) Option {
 	return newOption(func(options *Options) {
 		options.App.AppConfig = cfg
-	})
-}
-
-func WithCellStore(s store.Store) Option {
-	return newOption(func(options *Options) {
-		options.App.CellStore = s
-	})
-}
-
-func WithUEStore (s store.Store) Option {
-	return newOption(func(options *Options) {
-		options.App.UEStore = s
-	})
-}
-
-func WithMetricStore (s store.Store) Option {
-	return newOption(func(options *Options) {
-		options.App.MetricStore = s
 	})
 }
 
