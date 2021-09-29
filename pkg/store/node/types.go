@@ -2,40 +2,33 @@
 //
 // SPDX-License-Identifier: LicenseRef-ONF-Member-1.0
 
-package store
+package nodestore
 
 import "github.com/onosproject/onos-api/go/onos/topo"
 
-// Entry is store entry
 type Entry struct {
 	Key   string
 	Value interface{}
 }
-
-// StoreEvent is a store event
 type EventType int
 
 const (
-	// None none cell event
 	None EventType = iota
-	// Created created store event
 	Created
-	// Updated updated store event
-	Updated
-	// Deleted deleted store event
+	UpdatedNode
+	UpdatedSliceCreated
+	UpdatedSliceUpdated
+	UpdatedSliceDeleted
 	Deleted
 )
 
 func (e EventType) String() string {
-	return [...]string{"None", "Created", "Updated", "Deleted"}[e]
+	return [...]string{"None", "Created", "UpdatedNode", "UpdatedSliceCreated", "UpdatedSliceUpdated", "UpdatedSliceDeleted", "Deleted"}[e]
 }
 
 // RsmE2Node has E2 node information
 type RsmE2Node struct {
 	RsmE2NodeID       string
 	RsmNodeCapability []topo.RSMNodeSlicingCapabilityItem
-	//RsmSliceList      []topo.RSMSlicingItem
-}
-
-type RsmUe struct {
+	RsmSliceList      topo.RSMSliceItemList
 }

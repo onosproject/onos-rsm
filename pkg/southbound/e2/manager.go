@@ -262,6 +262,7 @@ func (m *Manager) watchCtrlChan(ctx context.Context, e2NodeID topoapi.ID) {
 }
 
 func (m *Manager) watchSliceChange(ctx context.Context, e2NodeID topoapi.ID) {
+
 	//ch := make(chan store.Event)
 	//err := m.sliceAssocStore.Watch(ctx, ch)
 	//if err != nil {

@@ -14,3 +14,5 @@ require (
 )
 
 replace github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm => /Users/woojoong/workspace/onf/sdran/onos-e2-sm/servicemodels/e2sm_rsm
+
+replace github.com/onosproject/onos-api/go => /Users/woojoong/workspace/onf/sdran/onos-api/go

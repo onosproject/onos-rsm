@@ -9,6 +9,7 @@ import (
 	"fmt"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	rsmapi "github.com/onosproject/onos-api/go/onos/rsm"
+	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	e2sm_rsm "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-rsm-ies"
 	e2sm_v2_ies "github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm/v1/e2sm-v2-ies"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -80,7 +81,7 @@ func (s Server) GetSlices(ctx context.Context, request *rsmapi.GetSlicesRequest)
 	}, nil
 }
 
-// CreateSlices creats a slice
+// CreateSlice creats a slice
 func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequest) (*rsmapi.CreateSliceResponse, error) {
 	log.Infof("Called CreateSlice: %v", request)
 	sliceID, err := strconv.Atoi(request.SliceId)
@@ -145,7 +146,50 @@ func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequ
 			},
 		}, nil
 	}
+
+	hasSliceItem := s.rnibClient.HasRsmSliceItemAspect(ctx, topoapi.ID(request.E2NodeId), request.SliceId)
+
+	if hasSliceItem {
+		return &rsmapi.CreateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("Slice ID %v is already added", sliceID),
+			},
+		}, nil
+	}
+
 	s.ctrlReqChs[request.E2NodeId] <- ctrlMsg
+
+	w, err := strconv.Atoi(request.Weight)
+	if err != nil {
+		return &rsmapi.CreateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("failed to convert weight value - %v", err),
+			},
+		}, nil
+	}
+
+	value := &topoapi.RSMSlicingItem{
+		ID: request.SliceId,
+		SliceDesc: "Test",
+		SliceParameters: &topoapi.RSMSliceParameters{
+			SchedulerType: topoapi.RSMSchedulerType(request.SchedulerType),
+			Weight: int32(w),
+		},
+		SliceType: topoapi.RSMSliceType(request.SliceType),
+	}
+
+	err = s.rnibClient.AddRsmSliceItemAspect(ctx, topoapi.ID(request.E2NodeId), value)
+	if err != nil {
+		return &rsmapi.CreateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("failed to create slice information to onos-topo although control message was sent: %v", err),
+			},
+		}, nil
+	}
+
 	return &rsmapi.CreateSliceResponse{
 		Ack: &rsmapi.Ack{
 			Success: true,
@@ -218,7 +262,49 @@ func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequ
 			},
 		}, nil
 	}
+
+	hasSliceItem := s.rnibClient.HasRsmSliceItemAspect(ctx, topoapi.ID(request.E2NodeId), request.SliceId)
+
+	if !hasSliceItem {
+		return &rsmapi.UpdateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("no slice ID %v in node %v", sliceID, request.E2NodeId),
+			},
+		}, nil
+	}
+
 	s.ctrlReqChs[request.E2NodeId] <- ctrlMsg
+
+	w, err := strconv.Atoi(request.Weight)
+	if err != nil {
+		return &rsmapi.UpdateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("failed to convert weight value - %v", err),
+			},
+		}, nil	}
+
+	value := &topoapi.RSMSlicingItem{
+		ID: request.SliceId,
+		SliceDesc: "Test",
+		SliceParameters: &topoapi.RSMSliceParameters{
+			SchedulerType: topoapi.RSMSchedulerType(request.SchedulerType),
+			Weight: int32(w),
+		},
+		SliceType: topoapi.RSMSliceType(request.SliceType),
+	}
+
+	err = s.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(request.E2NodeId), value)
+	if err != nil {
+		return &rsmapi.UpdateSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("failed to update slice information to onos-topo although control message was sent: %v", err),
+			},
+		}, nil
+	}
+
 	return &rsmapi.UpdateSliceResponse{
 		Ack: &rsmapi.Ack{
 			Success: true,
@@ -263,7 +349,29 @@ func (s Server) DeleteSlice(ctx context.Context, request *rsmapi.DeleteSliceRequ
 			},
 		}, nil
 	}
+	hasSliceItem := s.rnibClient.HasRsmSliceItemAspect(ctx, topoapi.ID(request.E2NodeId), request.SliceId)
+
+	if !hasSliceItem {
+		return &rsmapi.DeleteSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("no slice ID %v in node %v", sliceID, request.E2NodeId),
+			},
+		}, nil
+	}
+
 	s.ctrlReqChs[request.E2NodeId] <- ctrlMsg
+
+	err = s.rnibClient.DeleteRsmSliceItemAspect(ctx, topoapi.ID(request.GetE2NodeId()), request.SliceId)
+	if err != nil {
+		return &rsmapi.DeleteSliceResponse{
+			Ack: &rsmapi.Ack{
+				Success: false,
+				Cause:   fmt.Sprintf("failed to delete slice information from onos-topo although control message was sent: %v", err),
+			},
+		}, nil
+	}
+
 	return &rsmapi.DeleteSliceResponse{
 		Ack: &rsmapi.Ack{
 			Success: true,

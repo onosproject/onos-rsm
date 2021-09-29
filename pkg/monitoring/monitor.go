@@ -107,5 +107,7 @@ func (m *Monitor) processMetricTypeMessage(ctx context.Context, indHdr *e2sm_rsm
 
 func (m *Monitor) processEmmEventMessage(ctx context.Context, indMsg *e2sm_rsm.E2SmRsmIndicationMessageFormat2) error {
 
+	log.Infof("Received indication message (EMM): %v", indMsg)
+
 	return nil
 }

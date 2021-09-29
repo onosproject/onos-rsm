@@ -5,9 +5,8 @@
 package rnib
 
 import (
-	"bytes"
 	"context"
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
@@ -24,6 +23,14 @@ type TopoClient interface {
 	GetCells(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.E2Cell, error)
 	GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.E2Node, error)
 	E2NodeIDs(ctx context.Context) ([]topoapi.ID, error)
+	GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error)
+	AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
+	UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
+	DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error
+	GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) (*topoapi.RSMSlicingItem, error)
+	HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) bool
+	SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error
+	GetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID) (*topoapi.RSMSliceItemList, error)
 }
 
 // NewClient creates a new topo SDK client
@@ -76,7 +83,6 @@ func (c *Client) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topo
 	}
 
 	return e2Node, nil
-
 }
 
 // GetSupportedSlicingConfigTypes gets supported slicing config types
@@ -90,11 +96,9 @@ func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topo
 	for smName, sm := range e2Node.GetServiceModels() {
 		for _, ranFunc := range sm.GetRanFunctions() {
 			rsmRanFunc := &topoapi.RSMRanFunction{}
-			reader := bytes.NewReader(ranFunc.GetValue())
-			err = jsonpb.Unmarshal(reader, rsmRanFunc)
-			//err = proto.Unmarshal(ranFunc.GetValue(), rsmRanFunc)
+			err = proto.Unmarshal(ranFunc.GetValue(), rsmRanFunc)
 			if err != nil {
-				log.Debugf("RanFunction for SM - %v, URL - %v does not have RSM RAN Function Description", smName, ranFunc.GetTypeUrl())
+				log.Debugf("RanFunction for SM - %v, URL - %v does not have RSM RAN Function Description:\n%v", smName, ranFunc.GetTypeUrl(), err)
 				continue
 			}
 			for _, cap := range rsmRanFunc.GetRicSlicingNodeCapabilityList() {
@@ -105,6 +109,121 @@ func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topo
 		}
 	}
 	return result, nil
+}
+
+// AddRsmSliceItemAspect adds rsm slice item aspect
+func (c *Client) AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
+	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		rsmSliceList = &topoapi.RSMSliceItemList{
+			RsmSliceList: make([]*topoapi.RSMSlicingItem, 0),
+		}
+	}
+
+	rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList, msg)
+	err = c.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
+	err := c.DeleteRsmSliceItemAspect(ctx, nodeID, msg.GetID())
+	if err != nil {
+		return err
+	}
+	err = c.AddRsmSliceItemAspect(ctx, nodeID, msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error {
+	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return errors.NewNotFound("node %v has no slices", nodeID)
+	}
+
+	for i := 0; i < len(rsmSliceList.GetRsmSliceList()); i++ {
+		if rsmSliceList.GetRsmSliceList()[i].GetID() == sliceID {
+			rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList[:i], rsmSliceList.RsmSliceList[i+1:]...)
+			break
+		}
+	}
+
+	err = c.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetRsmSliceItemAspect gets rsm slice item aspect
+func (c *Client) GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) (*topoapi.RSMSlicingItem, error) {
+	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return nil, errors.NewNotFound("node %v has no slices", nodeID)
+	}
+
+	for _, item := range rsmSliceList.GetRsmSliceList() {
+		if item.GetID() == sliceID {
+			return item, nil
+		}
+	}
+
+	return nil, errors.NewNotFound("node %v does not have slice %v", nodeID, sliceID)
+}
+
+func (c *Client) HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) bool {
+	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return false
+	}
+
+	for _, item := range rsmSliceList.GetRsmSliceList() {
+		if item.GetID() == sliceID {
+			return true
+		}
+	}
+
+	return false
+}
+
+// SetRsmSliceListAspect sets Slice list
+func (c *Client) SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error {
+	object, err := c.client.Get(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+
+	err = object.SetAspect(msg)
+	if err != nil {
+		return err
+	}
+	err = c.client.Update(ctx, object)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetRsmSliceListAspect gets slice list aspect
+func (c *Client) GetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID) (*topoapi.RSMSliceItemList, error) {
+	object, err := c.client.Get(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	value := &topoapi.RSMSliceItemList{}
+	err = object.GetAspect(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
 }
 
 // GetCells get list of cells for each E2 node
