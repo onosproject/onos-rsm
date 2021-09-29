@@ -3,6 +3,7 @@ module github.com/onosproject/onos-rsm
 go 1.16
 
 require (
+	github.com/atomix/go-client v0.4.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.1.2
 	github.com/onosproject/onos-api/go v0.7.99

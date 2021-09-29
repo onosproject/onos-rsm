@@ -10,6 +10,7 @@ import (
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 )
 
 // Options E2 client options
@@ -31,7 +32,9 @@ type AppOptions struct {
 
 	Broker broker.Broker
 
-	RnibClient rnib.Client
+	RnibClient rnib.TopoClient
+
+	UenibClient uenib.UenibClient
 
 	UEStore store.Store
 
@@ -155,9 +158,16 @@ func WithBroker(broker broker.Broker) Option {
 }
 
 // WithRnibClient sets rnib client
-func WithRnibClient(rnibClient rnib.Client) Option {
+func WithRnibClient(rnibClient rnib.TopoClient) Option {
 	return newOption(func(options *Options) {
 		options.App.RnibClient = rnibClient
+	})
+}
+
+// WithUenibClient sets uenib client
+func WithUenibClient(uenibClient uenib.UenibClient) Option {
+	return newOption(func(options *Options) {
+		options.App.UenibClient = uenibClient
 	})
 }
 

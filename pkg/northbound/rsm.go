@@ -17,6 +17,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/southbound/e2"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 	"google.golang.org/grpc"
 	"strconv"
 )
@@ -25,11 +26,12 @@ var log = logging.GetLogger("northbound")
 
 // NewService returns the new NBI service
 func NewService(ctrlReqChs map[string]chan *e2api.ControlMessage,
-	rnibClient rnib.Client, ueStore store.Store,
+	rnibClient rnib.TopoClient, uenibClient uenib.UenibClient, ueStore store.Store,
 	sliceStore store.Store, sliceAssocStore store.Store, ctrlMsgHandler e2.ControlMessageHandler) service.Service {
 	return &Service{
 		ctrlReqChs:      ctrlReqChs,
 		rnibClient:      rnibClient,
+		uenibClient:     uenibClient,
 		ueStore:         ueStore,
 		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
@@ -40,7 +42,8 @@ func NewService(ctrlReqChs map[string]chan *e2api.ControlMessage,
 // Service represents the NBI service for RSM xAPP
 type Service struct {
 	ctrlReqChs      map[string]chan *e2api.ControlMessage
-	rnibClient      rnib.Client
+	rnibClient      rnib.TopoClient
+	uenibClient     uenib.UenibClient
 	ueStore         store.Store
 	sliceStore      store.Store
 	sliceAssocStore store.Store
@@ -52,6 +55,7 @@ func (s Service) Register(r *grpc.Server) {
 	server := &Server{
 		ctrlReqChs:      s.ctrlReqChs,
 		rnibClient:      s.rnibClient,
+		uenibClient:     s.uenibClient,
 		ueStore:         s.ueStore,
 		sliceStore:      s.sliceStore,
 		sliceAssocStore: s.sliceAssocStore,
@@ -63,7 +67,8 @@ func (s Service) Register(r *grpc.Server) {
 // Server is a struct for NBI server
 type Server struct {
 	ctrlReqChs      map[string]chan *e2api.ControlMessage
-	rnibClient      rnib.Client
+	rnibClient      rnib.TopoClient
+	uenibClient     uenib.UenibClient
 	ueStore         store.Store
 	sliceStore      store.Store
 	sliceAssocStore store.Store

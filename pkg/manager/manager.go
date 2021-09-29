@@ -17,6 +17,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/rsm"
 	"github.com/onosproject/onos-rsm/pkg/southbound/e2"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 )
 
 var log = logging.GetLogger("manager")
@@ -46,10 +47,14 @@ func NewManager(config Config) *Manager {
 	sliceStore := store.NewStore()
 	sliceAssocStore := store.NewStore()
 	rnibClient, err := rnib.NewClient()
-	ctrlReqChs := make(map[string]chan *e2api.ControlMessage)
 	if err != nil {
 		log.Warn(err)
 	}
+	uenibClient, err := uenib.NewClient(context.Background(), config.CertPath, config.KeyPath)
+	if err != nil {
+		log.Warn(err)
+	}
+	ctrlReqChs := make(map[string]chan *e2api.ControlMessage)
 
 	e2Manager, err := e2.NewManager(
 		e2.WithE2TAddress("onos-e2t", 5150),
@@ -58,6 +63,7 @@ func NewManager(config Config) *Manager {
 		e2.WithAppID("onos-rsm"),
 		e2.WithBroker(subscriptionBroker),
 		e2.WithRnibClient(rnibClient),
+		e2.WithUenibClient(uenibClient),
 		e2.WithUEStore(ueStore),
 		e2.WithSliceStore(sliceStore),
 		e2.WithSliceAssocStore(sliceAssocStore),
@@ -72,9 +78,10 @@ func NewManager(config Config) *Manager {
 		appConfig:       appCfg,
 		config:          config,
 		e2Manager:       e2Manager,
-		slicingManager:  rsm.NewManager(appCfg, rnibClient, ueStore, sliceStore, sliceAssocStore),
+		slicingManager:  rsm.NewManager(appCfg, rnibClient, uenibClient, ueStore, sliceStore, sliceAssocStore),
 		ueStore:         ueStore,
 		rnibClient:      rnibClient,
+		uenibClient:     uenibClient,
 		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
 		ctrlReqChs:      ctrlReqChs,
@@ -87,7 +94,8 @@ type Manager struct {
 	appConfig       appConfig.Config
 	config          Config
 	e2Manager       e2.Manager
-	rnibClient      rnib.Client
+	rnibClient      rnib.TopoClient
+	uenibClient		uenib.UenibClient
 	slicingManager  rsm.Manager
 	ueStore         store.Store
 	sliceStore      store.Store
@@ -136,7 +144,7 @@ func (m *Manager) startNorthboundServer() error {
 		northbound.SecurityConfig{}))
 
 	//TODO - RSM northbound service
-	s.AddService(nbi.NewService(m.ctrlReqChs, m.rnibClient, m.ueStore, m.sliceStore, m.sliceAssocStore, e2.NewControlMessageHandler()))
+	s.AddService(nbi.NewService(m.ctrlReqChs, m.rnibClient, m.uenibClient, m.ueStore, m.sliceStore, m.sliceAssocStore, e2.NewControlMessageHandler()))
 
 	doneCh := make(chan error)
 	go func() {

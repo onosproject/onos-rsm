@@ -10,6 +10,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 	"time"
 )
 
@@ -20,14 +21,16 @@ type Manager struct {
 	ueStore         store.Store
 	sliceStore      store.Store
 	sliceAssocStore store.Store
-	rnibClient      rnib.Client
+	rnibClient      rnib.TopoClient
+	uenibClient     uenib.UenibClient
 }
 
 // NewManager creates the RSM manager
-func NewManager(cfg *config.AppConfig, rnibClient rnib.Client, ueStore store.Store, sliceStore store.Store, sliceAssocStore store.Store) Manager {
+func NewManager(cfg *config.AppConfig, rnibClient rnib.TopoClient, uenibClient uenib.UenibClient, ueStore store.Store, sliceStore store.Store, sliceAssocStore store.Store) Manager {
 	return Manager{
 		ueStore:         ueStore,
 		rnibClient:      rnibClient,
+		uenibClient:     uenibClient,
 		sliceStore:      sliceStore,
 		sliceAssocStore: sliceAssocStore,
 	}

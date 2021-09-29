@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/monitoring"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/store"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 	"google.golang.org/protobuf/proto"
 	"strings"
 )
@@ -39,7 +40,8 @@ type Node interface {
 // Manager is a E2 session manager
 type Manager struct {
 	e2client        e2client.Client
-	rnibClient      rnib.Client
+	rnibClient      rnib.TopoClient
+	uenibClient     uenib.UenibClient
 	serviceModel    ServiceModelOptions
 	appConfig       *appConfig.AppConfig
 	streams         broker.Broker
@@ -69,6 +71,7 @@ func NewManager(opts ...Option) (Manager, error) {
 	return Manager{
 		e2client:   e2Client,
 		rnibClient: options.App.RnibClient,
+		uenibClient: options.App.UenibClient,
 		serviceModel: ServiceModelOptions{
 			Name:    options.ServiceModel.Name,
 			Version: options.ServiceModel.Version,
@@ -181,6 +184,7 @@ func (m *Manager) createSubscription(ctx context.Context, e2nodeID topoapi.ID, e
 		monitoring.WithNodeID(e2nodeID),
 		monitoring.WithStreamReader(streamReader),
 		monitoring.WithRNIBClient(m.rnibClient),
+		monitoring.WithUENIBClient(m.uenibClient),
 		monitoring.WithRicIndicationTriggerType(eventTrigger))
 
 	err = monitor.Start(ctx)

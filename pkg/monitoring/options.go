@@ -11,6 +11,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
+	"github.com/onosproject/onos-rsm/pkg/uenib"
 )
 
 // Options monitor options
@@ -24,7 +25,9 @@ type Options struct {
 type AppOptions struct {
 	AppConfig *appConfig.AppConfig
 
-	RNIBClient rnib.Client
+	RNIBClient rnib.TopoClient
+
+	UENibClient uenib.UenibClient
 
 	EventTriggerType e2sm_rsm.RsmRicindicationTriggerType
 }
@@ -84,9 +87,16 @@ func WithAppConfig(cfg *appConfig.AppConfig) Option {
 }
 
 // WithRNIBClient sets rnib client
-func WithRNIBClient(client rnib.Client) Option {
+func WithRNIBClient(client rnib.TopoClient) Option {
 	return newOption(func(options *Options) {
 		options.App.RNIBClient = client
+	})
+}
+
+// WithUENIBClient sets uenib client
+func WithUENIBClient(client uenib.UenibClient) Option {
+	return newOption(func(options *Options) {
+		options.App.UENibClient = client
 	})
 }
 

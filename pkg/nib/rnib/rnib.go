@@ -34,12 +34,12 @@ type TopoClient interface {
 }
 
 // NewClient creates a new topo SDK client
-func NewClient() (Client, error) {
+func NewClient() (TopoClient, error) {
 	sdkClient, err := toposdk.NewClient()
 	if err != nil {
-		return Client{}, err
+		return &Client{}, err
 	}
-	cl := Client{
+	cl := &Client{
 		client: sdkClient,
 	}
 
