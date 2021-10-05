@@ -171,7 +171,7 @@ func (m *Manager) handleNbiCreateSliceRequest(ctx context.Context, req *rsmapi.C
 
 	value := &topoapi.RSMSlicingItem{
 		ID:        req.SliceId,
-		SliceDesc: fmt.Sprintf("Slice created by onos-RSM xAPP"),
+		SliceDesc: "Slice created by onos-RSM xAPP",
 		SliceParameters: &topoapi.RSMSliceParameters{
 			SchedulerType: topoapi.RSMSchedulerType(req.SchedulerType),
 			Weight:        weight,
@@ -266,7 +266,7 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 
 	value := &topoapi.RSMSlicingItem{
 		ID:        req.SliceId,
-		SliceDesc: fmt.Sprintf("Slice created by onos-RSM xAPP"),
+		SliceDesc: "Slice created by onos-RSM xAPP",
 		SliceParameters: &topoapi.RSMSliceParameters{
 			SchedulerType: topoapi.RSMSchedulerType(req.SchedulerType),
 			Weight:        weight,
@@ -339,7 +339,7 @@ func (m *Manager) handleNbiDeleteSliceRequest(ctx context.Context, req *rsmapi.D
 		return fmt.Errorf("%v", ack.Reason)
 	}
 
-	err = m.rnibClient.DeleteRsmSliceItemAspect(ctx, topoapi.ID(nodeID), req.SliceId)
+	err = m.rnibClient.DeleteRsmSliceItemAspect(ctx, nodeID, req.SliceId)
 	if err != nil {
 		return fmt.Errorf("failed to delete slice information to onos-topo although control message was sent: %v", err)
 	}

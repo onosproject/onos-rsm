@@ -318,128 +318,119 @@ func (m *Manager) sendIndicationOnStream(streamID broker.StreamID, ch chan e2api
 func (m *Manager) watchCtrlSliceCreated(ctx context.Context, e2NodeID topoapi.ID) {
 	for ctrlReqMsg := range m.ctrlReqChsSliceCreate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
-		go func() {
-			node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-			ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
-			log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
-			if err != nil {
-				log.Warnf("Error sending control message - %v", err)
-				ack := Ack{
-					Success: false,
-					Reason:  err.Error(),
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			} else if ctrlRespMsg == nil {
-				log.Warn(" Ctrl Resp message is nil")
-				ack := Ack{
-					Success: false,
-					Reason:  "Ctrl Resp message is nil",
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			}
+		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		if err != nil {
+			log.Warnf("Error sending control message - %v", err)
 			ack := Ack{
-				Success: true,
+				Success: false,
+				Reason:  err.Error(),
 			}
 			ctrlReqMsg.AckCh <- ack
-		}()
+			continue
+		} else if ctrlRespMsg == nil {
+			log.Warn(" Ctrl Resp message is nil")
+			ack := Ack{
+				Success: false,
+				Reason:  "Ctrl Resp message is nil",
+			}
+			ctrlReqMsg.AckCh <- ack
+			continue
+		}
+		ack := Ack{
+			Success: true,
+		}
+		ctrlReqMsg.AckCh <- ack
 	}
 }
 
 func (m *Manager) watchCtrlSliceUpdated(ctx context.Context, e2NodeID topoapi.ID) {
 	for ctrlReqMsg := range m.ctrlReqChsSliceUpdate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
-		go func() {
-			node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-			ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
-			log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
-			if err != nil {
-				log.Warnf("Error sending control message - %v", err)
-				ack := Ack{
-					Success: false,
-					Reason:  err.Error(),
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			} else if ctrlRespMsg == nil {
-				log.Warn(" Ctrl Resp message is nil")
-				ack := Ack{
-					Success: false,
-					Reason:  "Ctrl Resp message is nil",
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			}
+		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
+		if err != nil {
+			log.Warnf("Error sending control message - %v", err)
 			ack := Ack{
-				Success: true,
+				Success: false,
+				Reason:  err.Error(),
 			}
 			ctrlReqMsg.AckCh <- ack
-		}()
+			continue
+		} else if ctrlRespMsg == nil {
+			log.Warn(" Ctrl Resp message is nil")
+			ack := Ack{
+				Success: false,
+				Reason:  "Ctrl Resp message is nil",
+			}
+			ctrlReqMsg.AckCh <- ack
+			continue
+		}
+		ack := Ack{
+			Success: true,
+		}
+		ctrlReqMsg.AckCh <- ack
 	}
 }
 
 func (m *Manager) watchCtrlSliceDeleted(ctx context.Context, e2NodeID topoapi.ID) {
 	for ctrlReqMsg := range m.ctrlReqChsSliceDelete[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
-		go func() {
-			node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-			ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
-			log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
-			if err != nil {
-				log.Warnf("Error sending control message - %v", err)
-				ack := Ack{
-					Success: false,
-					Reason:  err.Error(),
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			} else if ctrlRespMsg == nil {
-				log.Warn(" Ctrl Resp message is nil")
-				ack := Ack{
-					Success: false,
-					Reason:  "Ctrl Resp message is nil",
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			}
+		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
+		if err != nil {
+			log.Warnf("Error sending control message - %v", err)
 			ack := Ack{
-				Success: true,
+				Success: false,
+				Reason:  err.Error(),
 			}
 			ctrlReqMsg.AckCh <- ack
-		}()
+			continue
+		} else if ctrlRespMsg == nil {
+			log.Warn(" Ctrl Resp message is nil")
+			ack := Ack{
+				Success: false,
+				Reason:  "Ctrl Resp message is nil",
+			}
+			ctrlReqMsg.AckCh <- ack
+			continue
+		}
+		ack := Ack{
+			Success: true,
+		}
+		ctrlReqMsg.AckCh <- ack
 	}
 }
 
 func (m *Manager) watchCtrlUEAssociate(ctx context.Context, e2NodeID topoapi.ID) {
 	for ctrlReqMsg := range m.ctrlReqChsUeAssociate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
-		go func() {
-			node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-			ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
-			log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
-			if err != nil {
-				log.Warnf("Error sending control message - %v", err)
-				ack := Ack{
-					Success: false,
-					Reason:  err.Error(),
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			} else if ctrlRespMsg == nil {
-				log.Warn(" Ctrl Resp message is nil")
-				ack := Ack{
-					Success: false,
-					Reason:  "Ctrl Resp message is nil",
-				}
-				ctrlReqMsg.AckCh <- ack
-				return
-			}
+		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
+		if err != nil {
+			log.Warnf("Error sending control message - %v", err)
 			ack := Ack{
-				Success: true,
+				Success: false,
+				Reason:  err.Error(),
 			}
 			ctrlReqMsg.AckCh <- ack
-		}()
+			continue
+		} else if ctrlRespMsg == nil {
+			log.Warn(" Ctrl Resp message is nil")
+			ack := Ack{
+				Success: false,
+				Reason:  "Ctrl Resp message is nil",
+			}
+			ctrlReqMsg.AckCh <- ack
+			continue
+		}
+		ack := Ack{
+			Success: true,
+		}
+		ctrlReqMsg.AckCh <- ack
 	}
 }
 
