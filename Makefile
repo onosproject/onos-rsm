@@ -62,10 +62,10 @@ protos:
 
 onos-rsm-docker: # @HELP build onos-rsm Docker image
 onos-rsm-docker:
-	#@go mod vendor
+	@go mod vendor
 	docker build . -f build/onos-rsm/Dockerfile \
 		-t onosproject/onos-rsm:${ONOS_RSM_VERSION}
-	#@rm -rf vendor
+	@rm -rf vendor
 
 images: # @HELP build all Docker images
 images: build onos-rsm-docker
