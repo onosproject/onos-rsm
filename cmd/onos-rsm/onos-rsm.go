@@ -22,6 +22,9 @@ func main() {
 	grpcPort := flag.Int("grpcPort", 5150, "grpc Port number")
 	smName := flag.String("smName", "oran-e2sm-rsm", "Service model name in RAN function description")
 	smVersion := flag.String("smVersion", "v1", "Service model version in RAN function description")
+	uenibHost := flag.String("uenibHost", "onos-uenib:5150", "UENIB Host address")
+	appID := flag.String("appID", "onos-rsm", "ONOS-RSM xAPP ID")
+	ackTimer := flag.Int("ackTimer", 5, "ACK timer (seconds)")
 
 	ready := make(chan bool)
 
@@ -43,6 +46,9 @@ func main() {
 		GRPCPort:    *grpcPort,
 		SMName:      *smName,
 		SMVersion:   *smVersion,
+		UenibHost:   *uenibHost,
+		AppID:       *appID,
+		AckTimer:    *ackTimer,
 	}
 
 	mgr := manager.NewManager(cfg)
