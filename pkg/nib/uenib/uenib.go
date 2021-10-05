@@ -18,39 +18,37 @@ import (
 	"io"
 )
 
-const (
-	// UENIBAddress has UENIB endpoint
-	UENIBAddress = "onos-uenib:5150"
-)
-
 var log = logging.GetLogger("uenib")
 
-type UenibClient interface {
+func NewClient(ctx context.Context, certPath string, keyPath string, uenibAddr string) (Client, error) {
+	conn, err := southbound.Connect(ctx, uenibAddr, certPath, keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &client{
+		client: uenib.NewUEServiceClient(conn),
+	}, nil
+}
+
+type Client interface {
 	HasUE(ctx context.Context, ue *uenib.RsmUeInfo) bool
 	AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error
 	UpdateUE(ctx context.Context, ue *uenib.RsmUeInfo) error
 	DeleteUE(ctx context.Context, id string) error
 	DeleteUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) error
+	GetUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) (*uenib.RsmUeInfo, error)
 	GetUEWithGlobalID(ctx context.Context, id string) (*uenib.RsmUeInfo, error)
 	GetUEs(ctx context.Context) ([]*uenib.RsmUeInfo, error)
+	GetUenibUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) (uenib.UE, error)
+	DeleteUEWithE2NodeID(ctx context.Context, e2NodeID string) error
 }
 
-func NewClient(ctx context.Context, certPath string, keyPath string) (UenibClient, error) {
-	conn, err := southbound.Connect(ctx, UENIBAddress, certPath, keyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		client: uenib.NewUEServiceClient(conn),
-	}, nil
-}
-
-type Client struct {
+type client struct {
 	client uenib.UEServiceClient
 }
 
-func (c *Client) HasUE(ctx context.Context, ue *uenib.RsmUeInfo) bool {
+func (c *client) HasUE(ctx context.Context, ue *uenib.RsmUeInfo) bool {
 	list, err := c.GetUEs(ctx)
 	if err != nil {
 		log.Debug("onos-uenib has no UE")
@@ -74,7 +72,7 @@ func (c *Client) HasUE(ctx context.Context, ue *uenib.RsmUeInfo) bool {
 	return false
 }
 
-func (c *Client) AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
+func (c *client) AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 	log.Debugf("received ue: %v", ue)
 
 	if c.HasUE(ctx, ue) {
@@ -82,7 +80,7 @@ func (c *Client) AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 	}
 
 	uenibObj := uenib.UE{
-		ID: uenib.ID(ue.GetGlobalUeID()),
+		ID:      uenib.ID(ue.GetGlobalUeID()),
 		Aspects: make(map[string]*types.Any),
 	}
 
@@ -95,7 +93,7 @@ func (c *Client) AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 
 	uenibObj.Aspects[proto.MessageName(ue)] = &types.Any{
 		TypeUrl: proto.MessageName(ue),
-		Value: writer.Bytes(),
+		Value:   writer.Bytes(),
 	}
 
 	req := &uenib.CreateUERequest{
@@ -111,7 +109,7 @@ func (c *Client) AddUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 	return nil
 }
 
-func (c *Client) UpdateUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
+func (c *client) UpdateUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 	if !c.HasUE(ctx, ue) {
 		return errors.NewNotFound(fmt.Sprintf("UE not found - UE: %v", *ue))
 	}
@@ -129,7 +127,7 @@ func (c *Client) UpdateUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 	return nil
 }
 
-func (c *Client) DeleteUE(ctx context.Context, id string) error {
+func (c *client) DeleteUE(ctx context.Context, id string) error {
 	log.Debugf("received id: %v", id)
 
 	ue, err := c.getUenibUEWithGlobalUeID(ctx, id)
@@ -159,9 +157,9 @@ func (c *Client) DeleteUE(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Client) DeleteUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) error {
+func (c *client) DeleteUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) error {
 	log.Debugf("received CUID: %v, preferredType: %v, ueID: %v", cuNodeID, preferredType, ueID)
-	ue, err := c.getUenibUEWithPreferredID(ctx, cuNodeID, preferredType, ueID)
+	ue, err := c.GetUenibUEWithPreferredID(ctx, cuNodeID, preferredType, ueID)
 	if err != nil {
 		return err
 	}
@@ -173,7 +171,24 @@ func (c *Client) DeleteUEWithPreferredID(ctx context.Context, cuNodeID string, p
 	return c.DeleteUE(ctx, rsmUE.GetGlobalUeID())
 }
 
-func (c *Client) GetUEWithGlobalID(ctx context.Context, id string) (*uenib.RsmUeInfo, error) {
+func (c *client) DeleteUEWithE2NodeID(ctx context.Context, e2NodeID string) error {
+	ues, err := c.GetUEs(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, ue := range ues {
+		if ue.GetDuE2NodeId() == e2NodeID || ue.GetCuE2NodeId() == e2NodeID {
+			err = c.DeleteUE(ctx, ue.GetGlobalUeID())
+			if err != nil {
+				log.Warn(err)
+			}
+		}
+	}
+	return err
+}
+
+func (c *client) GetUEWithGlobalID(ctx context.Context, id string) (*uenib.RsmUeInfo, error) {
 	list, err := c.GetUEs(ctx)
 	if err != nil {
 		return nil, err
@@ -188,22 +203,20 @@ func (c *Client) GetUEWithGlobalID(ctx context.Context, id string) (*uenib.RsmUe
 	return nil, errors.NewNotFound(fmt.Sprintf("Global UE ID %v does not exist", id))
 }
 
-func (c *Client) GetUEWithF1apID(ctx context.Context, nodeID string, duUeF1apID int64) (*uenib.RsmUeInfo, error) {
-	list, err := c.GetUEs(ctx)
+func (c *client) GetUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) (*uenib.RsmUeInfo, error) {
+	ue, err := c.GetUenibUEWithPreferredID(ctx, cuNodeID, preferredType, ueID)
 	if err != nil {
-		return nil, err
+		return &uenib.RsmUeInfo{}, err
 	}
-
-	for _, item := range list {
-		if item.GetUeIdList().GetDuUeF1apID().GetValue() == duUeF1apID {
-			return item, nil
-		}
+	rsmUE := &uenib.RsmUeInfo{}
+	err = ue.GetAspect(rsmUE)
+	if err != nil {
+		return &uenib.RsmUeInfo{}, err
 	}
-
-	return nil, errors.NewNotFound(fmt.Sprintf("DU-UE-F1AP-ID %v does not connected to DU Node ID %v", duUeF1apID, nodeID))
+	return rsmUE, err
 }
 
-func (c *Client) GetUEs(ctx context.Context) ([]*uenib.RsmUeInfo, error) {
+func (c *client) GetUEs(ctx context.Context) ([]*uenib.RsmUeInfo, error) {
 	result := make([]*uenib.RsmUeInfo, 0)
 
 	stream, err := c.client.ListUEs(ctx, &uenib.ListUERequest{})
@@ -230,7 +243,7 @@ func (c *Client) GetUEs(ctx context.Context) ([]*uenib.RsmUeInfo, error) {
 	return result, nil
 }
 
-func (c *Client) getUenibUEWithGlobalUeID(ctx context.Context, id string) (uenib.UE, error) {
+func (c *client) getUenibUEWithGlobalUeID(ctx context.Context, id string) (uenib.UE, error) {
 	req := &uenib.GetUERequest{
 		ID: uenib.ID(id),
 	}
@@ -242,7 +255,7 @@ func (c *Client) getUenibUEWithGlobalUeID(ctx context.Context, id string) (uenib
 	return resp.GetUE(), nil
 }
 
-func (c *Client) getUenibUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) (uenib.UE, error) {
+func (c *client) GetUenibUEWithPreferredID(ctx context.Context, cuNodeID string, preferredType uenib.UeIdType, ueID int64) (uenib.UE, error) {
 	var result uenib.UE
 	hasUE := false
 	stream, err := c.client.ListUEs(ctx, &uenib.ListUERequest{})

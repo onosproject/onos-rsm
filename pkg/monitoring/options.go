@@ -11,37 +11,33 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/broker"
 	appConfig "github.com/onosproject/onos-rsm/pkg/config"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
-	"github.com/onosproject/onos-rsm/pkg/uenib"
+	"github.com/onosproject/onos-rsm/pkg/nib/uenib"
 )
 
-// Options monitor options
 type Options struct {
 	App AppOptions
 
 	Monitor MonitorOptions
 }
 
-// AppOptions application options
 type AppOptions struct {
 	AppConfig *appConfig.AppConfig
 
-	RNIBClient rnib.TopoClient
+	RnibClient rnib.TopoClient
 
-	UENibClient uenib.UenibClient
+	UenibClient uenib.Client
 
 	EventTriggerType e2sm_rsm.RsmRicindicationTriggerType
 }
 
-// MonitorOptions monitoring options
 type MonitorOptions struct {
 	Node         e2client.Node
 	NodeID       topoapi.ID
 	StreamReader broker.StreamReader
 }
 
-// Option option interface
 type Option interface {
-	apply(*Options)
+	apply(options *Options)
 }
 
 type funcOption struct {
@@ -89,14 +85,14 @@ func WithAppConfig(cfg *appConfig.AppConfig) Option {
 // WithRNIBClient sets rnib client
 func WithRNIBClient(client rnib.TopoClient) Option {
 	return newOption(func(options *Options) {
-		options.App.RNIBClient = client
+		options.App.RnibClient = client
 	})
 }
 
 // WithUENIBClient sets uenib client
-func WithUENIBClient(client uenib.UenibClient) Option {
+func WithUENIBClient(client uenib.Client) Option {
 	return newOption(func(options *Options) {
-		options.App.UENibClient = client
+		options.App.UenibClient = client
 	})
 }
 

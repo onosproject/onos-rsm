@@ -6,8 +6,11 @@ package rnib
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/onosproject/onos-api/go/onos/rsm"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"strings"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
@@ -17,78 +20,186 @@ import (
 
 var log = logging.GetLogger("rnib")
 
-// TopoClient R-NIB client interface
-type TopoClient interface {
-	WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error
-	GetCells(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.E2Cell, error)
-	GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.E2Node, error)
-	E2NodeIDs(ctx context.Context) ([]topoapi.ID, error)
-	GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error)
-	AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
-	UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
-	DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error
-	GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) (*topoapi.RSMSlicingItem, error)
-	HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) bool
-	SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error
-	GetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID) (*topoapi.RSMSliceItemList, error)
-}
-
-// NewClient creates a new topo SDK client
 func NewClient() (TopoClient, error) {
 	sdkClient, err := toposdk.NewClient()
 	if err != nil {
-		return &Client{}, err
+		return nil, err
 	}
-	cl := &Client{
+	return &topoClient{
 		client: sdkClient,
-	}
-
-	return cl, nil
-
+	}, nil
 }
 
-// Client topo SDK client
-type Client struct {
+type TopoClient interface {
+	WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error
+	GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error)
+	GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.E2Node, error)
+	GetTargetDUE2NodeID(ctx context.Context, cuE2NodeID topoapi.ID) (topoapi.ID, error)
+	GetSourceCUE2NodeID(ctx context.Context, duE2NodeID topoapi.ID) (topoapi.ID, error)
+	HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) bool
+	AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
+	SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error
+	UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
+	DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error
+	GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) (*topoapi.RSMSlicingItem, error)
+	DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error
+}
+
+type topoClient struct {
 	client toposdk.Client
 }
 
-// E2NodeIDs lists all of connected E2 nodes
-func (c *Client) E2NodeIDs(ctx context.Context) ([]topoapi.ID, error) {
-	objects, err := c.client.List(ctx, toposdk.WithListFilters(getControlRelationFilter()))
+func (t *topoClient) DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error {
+	object, err := t.client.Get(ctx, nodeID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	e2NodeIDs := make([]topoapi.ID, len(objects))
-	for _, object := range objects {
-		relation := object.Obj.(*topoapi.Object_Relation)
-		e2NodeID := relation.Relation.TgtEntityID
-		e2NodeIDs = append(e2NodeIDs, e2NodeID)
+	aspectKey := proto.MessageName(&topoapi.RSMSliceItemList{})
+	delete(object.Aspects, aspectKey)
+
+	err = t.client.Update(ctx, object)
+	if err != nil {
+		return err
 	}
 
-	return e2NodeIDs, nil
+	return nil
 }
 
-// GetE2NodeAspects gets E2 node aspects
-func (c *Client) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.E2Node, error) {
-	object, err := c.client.Get(ctx, nodeID)
+func (t *topoClient) GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) (*topoapi.RSMSlicingItem, error) {
+	rsmSliceList, err := t.GetRsmSliceListAspect(ctx, nodeID)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewNotFound("node %v has no slices", nodeID)
 	}
 
-	e2Node := &topoapi.E2Node{}
-	err = object.GetAspect(e2Node)
-	if err != nil {
-		return nil, err
+	var topoSliceType topoapi.RSMSliceType
+	switch sliceType {
+	case rsm.SliceType_SLICE_TYPE_DL_SLICE:
+		topoSliceType = topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE
+	case rsm.SliceType_SLICE_TYPE_UL_SLICE:
+		topoSliceType = topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE
+	default:
+		return nil, errors.NewNotSupported(fmt.Sprintf("slice type %v does not support", sliceType.String()))
 	}
 
-	return e2Node, nil
+	for _, item := range rsmSliceList.GetRsmSliceList() {
+		if item.GetID() == sliceID && item.GetSliceType() == topoSliceType {
+			return item, nil
+		}
+	}
+
+	return nil, errors.NewNotFound("node %v does not have slice %v (%v)", nodeID, sliceID, sliceType.String())
 }
 
-// GetSupportedSlicingConfigTypes gets supported slicing config types
-func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error) {
+func (t *topoClient) DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error {
+	rsmSliceList, err := t.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return errors.NewNotFound("node %v has no slices", nodeID)
+	}
+
+	for i := 0; i < len(rsmSliceList.GetRsmSliceList()); i++ {
+		if rsmSliceList.GetRsmSliceList()[i].GetID() == sliceID {
+			rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList[:i], rsmSliceList.RsmSliceList[i+1:]...)
+			break
+		}
+	}
+
+	err = t.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *topoClient) UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
+	err := t.DeleteRsmSliceItemAspect(ctx, nodeID, msg.GetID())
+	if err != nil {
+		return err
+	}
+	err = t.AddRsmSliceItemAspect(ctx, nodeID, msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *topoClient) SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error {
+	object, err := t.client.Get(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+
+	err = object.SetAspect(msg)
+	if err != nil {
+		return err
+	}
+	err = t.client.Update(ctx, object)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *topoClient) AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
+	rsmSliceList, err := t.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		rsmSliceList = &topoapi.RSMSliceItemList{
+			RsmSliceList: make([]*topoapi.RSMSlicingItem, 0),
+		}
+	}
+
+	rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList, msg)
+	err = t.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *topoClient) HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) bool {
+	rsmSliceList, err := t.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return false
+	}
+
+	var topoSliceType topoapi.RSMSliceType
+	switch sliceType {
+	case rsm.SliceType_SLICE_TYPE_DL_SLICE:
+		topoSliceType = topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE
+	case rsm.SliceType_SLICE_TYPE_UL_SLICE:
+		topoSliceType = topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE
+	default:
+		return false
+	}
+
+	for _, item := range rsmSliceList.GetRsmSliceList() {
+		if item.GetID() == sliceID && item.GetSliceType() == topoSliceType {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (t *topoClient) GetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID) (*topoapi.RSMSliceItemList, error) {
+	object, err := t.client.Get(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	value := &topoapi.RSMSliceItemList{}
+	err = object.GetAspect(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+func (t *topoClient) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSupportedSlicingConfigItem, error) {
 	result := make([]*topoapi.RSMSupportedSlicingConfigItem, 0)
-	e2Node, err := c.GetE2NodeAspects(ctx, nodeID)
+	e2Node, err := t.GetE2NodeAspects(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,150 +222,27 @@ func (c *Client) GetSupportedSlicingConfigTypes(ctx context.Context, nodeID topo
 	return result, nil
 }
 
-// AddRsmSliceItemAspect adds rsm slice item aspect
-func (c *Client) AddRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
-	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
-	if err != nil {
-		rsmSliceList = &topoapi.RSMSliceItemList{
-			RsmSliceList: make([]*topoapi.RSMSlicingItem, 0),
-		}
-	}
-
-	rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList, msg)
-	err = c.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error {
-	err := c.DeleteRsmSliceItemAspect(ctx, nodeID, msg.GetID())
-	if err != nil {
-		return err
-	}
-	err = c.AddRsmSliceItemAspect(ctx, nodeID, msg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error {
-	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
-	if err != nil {
-		return errors.NewNotFound("node %v has no slices", nodeID)
-	}
-
-	for i := 0; i < len(rsmSliceList.GetRsmSliceList()); i++ {
-		if rsmSliceList.GetRsmSliceList()[i].GetID() == sliceID {
-			rsmSliceList.RsmSliceList = append(rsmSliceList.RsmSliceList[:i], rsmSliceList.RsmSliceList[i+1:]...)
-			break
-		}
-	}
-
-	err = c.SetRsmSliceListAspect(ctx, nodeID, rsmSliceList)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetRsmSliceItemAspect gets rsm slice item aspect
-func (c *Client) GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) (*topoapi.RSMSlicingItem, error) {
-	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
-	if err != nil {
-		return nil, errors.NewNotFound("node %v has no slices", nodeID)
-	}
-
-	for _, item := range rsmSliceList.GetRsmSliceList() {
-		if item.GetID() == sliceID {
-			return item, nil
-		}
-	}
-
-	return nil, errors.NewNotFound("node %v does not have slice %v", nodeID, sliceID)
-}
-
-func (c *Client) HasRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) bool {
-	rsmSliceList, err := c.GetRsmSliceListAspect(ctx, nodeID)
-	if err != nil {
-		return false
-	}
-
-	for _, item := range rsmSliceList.GetRsmSliceList() {
-		if item.GetID() == sliceID {
-			return true
-		}
-	}
-
-	return false
-}
-
-// SetRsmSliceListAspect sets Slice list
-func (c *Client) SetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSliceItemList) error {
-	object, err := c.client.Get(ctx, nodeID)
-	if err != nil {
-		return err
-	}
-
-	err = object.SetAspect(msg)
-	if err != nil {
-		return err
-	}
-	err = c.client.Update(ctx, object)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GetRsmSliceListAspect gets slice list aspect
-func (c *Client) GetRsmSliceListAspect(ctx context.Context, nodeID topoapi.ID) (*topoapi.RSMSliceItemList, error) {
-	object, err := c.client.Get(ctx, nodeID)
+func (t *topoClient) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*topoapi.E2Node, error) {
+	object, err := t.client.Get(ctx, nodeID)
 	if err != nil {
 		return nil, err
 	}
 
-	value := &topoapi.RSMSliceItemList{}
-	err = object.GetAspect(value)
+	e2Node := &topoapi.E2Node{}
+	err = object.GetAspect(e2Node)
 	if err != nil {
 		return nil, err
 	}
 
-	return value, nil
+	return e2Node, nil
 }
 
-// GetCells get list of cells for each E2 node
-func (c *Client) GetCells(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.E2Cell, error) {
-	filter := &topoapi.Filters{
-		RelationFilter: &topoapi.RelationFilter{SrcId: string(nodeID),
-			RelationKind: topoapi.CONTAINS,
-			TargetKind:   ""}}
-
-	objects, err := c.client.List(ctx, toposdk.WithListFilters(filter))
+func (t *topoClient) WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error {
+	err := t.client.Watch(ctx, ch, toposdk.WithWatchFilters(getControlRelationFilter()))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var cells []*topoapi.E2Cell
-	for _, obj := range objects {
-		targetEntity := obj.GetEntity()
-		if targetEntity.GetKindID() == topoapi.E2CELL {
-			cellObject := &topoapi.E2Cell{}
-			err = obj.GetAspect(cellObject)
-			if err != nil {
-				return nil, err
-			}
-			cells = append(cells, cellObject)
-		}
-	}
-
-	if len(cells) == 0 {
-		return nil, errors.New(errors.NotFound, "there is no cell to subscribe for e2 node %s", nodeID)
-	}
-
-	return cells, nil
+	return nil
 }
 
 func getControlRelationFilter() *topoapi.Filters {
@@ -270,13 +258,48 @@ func getControlRelationFilter() *topoapi.Filters {
 	return controlRelationFilter
 }
 
-// WatchE2Connections watch e2 node connection changes
-func (c *Client) WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error {
-	err := c.client.Watch(ctx, ch, toposdk.WithWatchFilters(getControlRelationFilter()))
+func (t *topoClient) GetTargetDUE2NodeID(ctx context.Context, cuE2NodeID topoapi.ID) (topoapi.ID, error) {
+	// ToDo: When auto-discovery comes in, it should be changed
+	objects, err := t.client.List(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	for _, obj := range objects {
+		log.Debugf("Relation: %v", obj.GetEntity())
+		if obj.GetEntity() != nil && obj.GetEntity().GetKindID() == topoapi.E2NODE {
+			if cuE2NodeID != obj.GetID() {
+				nodeID := fmt.Sprintf("%s/%s", strings.Split(string(cuE2NodeID), "/")[0], strings.Split(string(cuE2NodeID), "/")[1])
+				tgtNodeID := fmt.Sprintf("%s/%s", strings.Split(string(obj.GetID()), "/")[0], strings.Split(string(obj.GetID()), "/")[1])
+				if nodeID == tgtNodeID {
+					return obj.GetID(), nil
+				}
+			}
+		}
+	}
+
+	return "", errors.NewNotFound(fmt.Sprintf("DU-ID not found (CU-ID: %v)", cuE2NodeID))
 }
 
-var _ TopoClient = &Client{}
+func (t *topoClient) GetSourceCUE2NodeID(ctx context.Context, duE2NodeID topoapi.ID) (topoapi.ID, error) {
+	// ToDo: When auto-discovery comes in, it should be changed
+	objects, err := t.client.List(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	for _, obj := range objects {
+		log.Debugf("Relation: %v", obj.GetEntity())
+		if obj.GetEntity() != nil && obj.GetEntity().GetKindID() == topoapi.E2NODE {
+			if duE2NodeID != obj.GetID() {
+				nodeID := fmt.Sprintf("%s/%s", strings.Split(string(duE2NodeID), "/")[0], strings.Split(string(duE2NodeID), "/")[1])
+				tgtNodeID := fmt.Sprintf("%s/%s", strings.Split(string(obj.GetID()), "/")[0], strings.Split(string(obj.GetID()), "/")[1])
+				if nodeID == tgtNodeID {
+					return obj.GetID(), nil
+				}
+			}
+		}
+	}
+
+	return "", errors.NewNotFound(fmt.Sprintf("CU-ID not found (DU-ID: %v)", duE2NodeID))
+}
