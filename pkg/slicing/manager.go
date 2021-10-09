@@ -264,6 +264,16 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 		return fmt.Errorf("%v", ack.Reason)
 	}
 
+	sliceAspect, err := m.rnibClient.GetRsmSliceItemAspect(ctx, topoapi.ID(req.E2NodeId), req.SliceId, req.GetSliceType())
+	if err != nil {
+		return fmt.Errorf("failed to get slice aspect - slice ID %v in node %v: err: %v", sliceID, nodeID, err)
+	}
+
+	ueIDList := sliceAspect.GetUeIdList()
+	if len(ueIDList) == 0 {
+		ueIDList = make([]*topoapi.UeIdentity, 0)
+	}
+
 	value := &topoapi.RSMSlicingItem{
 		ID:        req.SliceId,
 		SliceDesc: "Slice created by onos-RSM xAPP",
@@ -272,12 +282,34 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 			Weight:        weight,
 		},
 		SliceType: topoapi.RSMSliceType(req.SliceType),
-		UeIdList:  make([]*topoapi.UeIdentity, 0),
+		UeIdList:  ueIDList,
 	}
 
 	err = m.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(req.E2NodeId), value)
 	if err != nil {
 		return fmt.Errorf("failed to update slice information to onos-topo although control message was sent: %v", err)
+	}
+
+	ues, err := m.uenibClient.GetUEs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get UEs in UENIB: %v", err)
+	}
+
+	for i := 0; i < len(ues); i++ {
+		changed := false
+		for j := 0; j < len(ues[i].SliceList); j++ {
+			if ues[i].SliceList[j].ID == req.SliceId && ues[i].SliceList[j].SliceType == uenib_api.RSMSliceType(req.SliceType) {
+				ues[i].SliceList[j].SliceParameters.Weight = weight
+				ues[i].SliceList[j].SliceParameters.SchedulerType = uenib_api.RSMSchedulerType(req.SchedulerType)
+				changed = true
+			}
+		}
+		if changed {
+			err = m.uenibClient.UpdateUE(ctx, ues[i])
+			if err != nil {
+				return fmt.Errorf("failed to update UENIB: %v", err)
+			}
+		}
 	}
 
 	return nil
@@ -342,6 +374,28 @@ func (m *Manager) handleNbiDeleteSliceRequest(ctx context.Context, req *rsmapi.D
 	err = m.rnibClient.DeleteRsmSliceItemAspect(ctx, nodeID, req.SliceId)
 	if err != nil {
 		return fmt.Errorf("failed to delete slice information to onos-topo although control message was sent: %v", err)
+	}
+
+	ues, err := m.uenibClient.GetUEs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get UEs in UENIB: %v", err)
+	}
+
+	for i := 0; i < len(ues); i++ {
+		changed := false
+		for j := 0; j < len(ues[i].SliceList); j++ {
+			if ues[i].SliceList[j].ID == req.SliceId && ues[i].SliceList[j].SliceType == uenib_api.RSMSliceType(req.SliceType) {
+				ues[i].SliceList = append(ues[i].SliceList[:j], ues[i].SliceList[j+1:]...)
+				j--
+				changed = true
+			}
+		}
+		if changed {
+			err = m.uenibClient.UpdateUE(ctx, ues[i])
+			if err != nil {
+				return fmt.Errorf("failed to update UENIB: %v", err)
+			}
+		}
 	}
 
 	return nil
@@ -582,7 +636,143 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 		},
 	}
 
+	var topoDrbID *topoapi.DrbId
+	var uenibDrbID *uenib_api.DrbId
+	for _, bID := range rsmUEInfo.GetBearerIdList() {
+		if bID.GetDrbId().GetFiveGdrbId() != nil && bID.GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) {
+			topoDrbID = &topoapi.DrbId{
+				DrbId: &topoapi.DrbId_FiveGdrbId{
+					FiveGdrbId: &topoapi.FiveGDrbId{
+						Value: bID.GetDrbId().GetFiveGdrbId().GetValue(),
+					},
+				},
+			}
+			uenibDrbID = &uenib_api.DrbId{
+				DrbId: &uenib_api.DrbId_FiveGdrbId{
+					FiveGdrbId: &uenib_api.FiveGDrbId{
+						Value: bID.GetDrbId().GetFiveGdrbId().GetValue(),
+					},
+				},
+			}
+			if bID.GetDrbId().GetFiveGdrbId().GetQfi() != nil {
+				topoDrbID.GetFiveGdrbId().Qfi = &topoapi.Qfi{
+					Value: bID.GetDrbId().GetFiveGdrbId().GetQfi().GetValue(),
+				}
+				uenibDrbID.GetFiveGdrbId().Qfi = &uenib_api.Qfi{
+					Value: bID.GetDrbId().GetFiveGdrbId().GetQfi().GetValue(),
+				}
+			}
+			if len(bID.GetDrbId().GetFiveGdrbId().GetFlowsMapToDrb()) != 0 {
+				topoDrbID.GetFiveGdrbId().FlowsMapToDrb = make([]*topoapi.QoSflowLevelParameters, 0)
+				uenibDrbID.GetFiveGdrbId().FlowsMapToDrb = make([]*uenib_api.QoSflowLevelParameters, 0)
+				for _, flow := range bID.GetDrbId().GetFiveGdrbId().GetFlowsMapToDrb() {
+					var paramTopo *topoapi.QoSflowLevelParameters
+					var paramUenib *uenib_api.QoSflowLevelParameters
+					if flow.GetNonDynamicFiveQi() != nil {
+						paramTopo = &topoapi.QoSflowLevelParameters{
+							QosFlowLevelParameters: &topoapi.QoSflowLevelParameters_NonDynamicFiveQi{
+								NonDynamicFiveQi: &topoapi.NonDynamicFiveQi{
+									FiveQi: &topoapi.FiveQi{
+										Value: flow.GetNonDynamicFiveQi().GetFiveQi().GetValue(),
+									},
+								},
+							},
+						}
+						paramUenib = &uenib_api.QoSflowLevelParameters{
+							QosFlowLevelParameters: &uenib_api.QoSflowLevelParameters_NonDynamicFiveQi{
+								NonDynamicFiveQi: &uenib_api.NonDynamicFiveQi{
+									FiveQi: &uenib_api.FiveQi{
+										Value: flow.GetNonDynamicFiveQi().GetFiveQi().GetValue(),
+									},
+								},
+							},
+						}
+					}
+					if flow.GetDynamicFiveQi() != nil {
+						paramTopo = &topoapi.QoSflowLevelParameters{
+							QosFlowLevelParameters: &topoapi.QoSflowLevelParameters_DynamicFiveQi{
+								DynamicFiveQi: &topoapi.DynamicFiveQi{
+									PriorityLevel:    flow.GetDynamicFiveQi().GetPriorityLevel(),
+									PacketDelayBudge: flow.GetDynamicFiveQi().GetPacketDelayBudge(),
+									PacketErrorRate:  flow.GetDynamicFiveQi().GetPacketErrorRate(),
+								},
+							},
+						}
+						paramUenib = &uenib_api.QoSflowLevelParameters{
+							QosFlowLevelParameters: &uenib_api.QoSflowLevelParameters_DynamicFiveQi{
+								DynamicFiveQi: &uenib_api.DynamicFiveQi{
+									PriorityLevel:    flow.GetDynamicFiveQi().GetPriorityLevel(),
+									PacketDelayBudge: flow.GetDynamicFiveQi().GetPacketDelayBudge(),
+									PacketErrorRate:  flow.GetDynamicFiveQi().GetPacketErrorRate(),
+								},
+							},
+						}
+					}
+					topoDrbID.GetFiveGdrbId().FlowsMapToDrb = append(topoDrbID.GetFiveGdrbId().FlowsMapToDrb, paramTopo)
+					uenibDrbID.GetFiveGdrbId().FlowsMapToDrb = append(uenibDrbID.GetFiveGdrbId().FlowsMapToDrb, paramUenib)
+				}
+			}
+		}
+		if bID.GetDrbId().GetFourGdrbId() != nil && bID.GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) {
+			topoDrbID = &topoapi.DrbId{
+				DrbId: &topoapi.DrbId_FourGdrbId{
+					FourGdrbId: &topoapi.FourGDrbId{
+						Value: bID.GetDrbId().GetFourGdrbId().GetValue(),
+					},
+				},
+			}
+			uenibDrbID = &uenib_api.DrbId{
+				DrbId: &uenib_api.DrbId_FourGdrbId{
+					FourGdrbId: &uenib_api.FourGDrbId{
+						Value: bID.GetDrbId().GetFourGdrbId().GetValue(),
+					},
+				},
+			}
+			if bID.GetDrbId().GetFourGdrbId().GetQci() != nil {
+				topoDrbID.GetFourGdrbId().Qci = &topoapi.Qci{
+					Value: bID.GetDrbId().GetFourGdrbId().GetQci().GetValue(),
+				}
+				uenibDrbID.GetFourGdrbId().Qci = &uenib_api.Qci{
+					Value: bID.GetDrbId().GetFourGdrbId().GetQci().GetValue(),
+				}
+			}
+		}
+	}
+
 	if hasUlSliceItem {
+		ulSliceItems, err := m.rnibClient.GetRsmSliceItemAspects(ctx, topoapi.ID(duNodeID))
+		if err != nil {
+			return fmt.Errorf("failed to get slice item list from R-NIB: %v", err)
+		}
+		for _, oldDlItem := range ulSliceItems {
+			changed := false
+			for i := 0; i < len(oldDlItem.UeIdList); i++ {
+				if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId() != nil {
+					if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
+						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE {
+						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
+						i--
+						changed = true
+					}
+				} else if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId() != nil && oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID {
+					if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
+						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE {
+						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
+						i--
+						changed = true
+					}
+				}
+			}
+			if changed {
+				err = m.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(req.GetE2NodeId()), oldDlItem)
+				if err != nil {
+					return fmt.Errorf("failed to update UL slice item top onos-topo(ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE, err)
+				}
+			}
+		}
+
 		ulSliceItem, err := m.rnibClient.GetRsmSliceItemAspect(ctx, topoapi.ID(duNodeID), req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE)
 		if err != nil {
 			return fmt.Errorf("failed to get UL slice item (ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE, err)
@@ -592,18 +782,18 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			ulSliceItem.UeIdList = make([]*topoapi.UeIdentity, 0)
 		}
 
+		ueIDforTopo.DrbId = topoDrbID
 		ulSliceItem.UeIdList = append(ulSliceItem.UeIdList, ueIDforTopo)
+
 		err = m.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(req.GetE2NodeId()), ulSliceItem)
 		if err != nil {
 			return fmt.Errorf("failed to update UL slice item top onos-topo(ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE, err)
 		}
 
 		// Update uenib
-		log.Infof("Woojoong-1: %v", rsmUEInfo)
 		if rsmUEInfo.GetSliceList() == nil || len(rsmUEInfo.GetSliceList()) == 0 {
 			rsmUEInfo.SliceList = make([]*uenib_api.SliceInfo, 0)
 		}
-		log.Infof("Woojoong-2: %v", rsmUEInfo)
 
 		var ulSliceSchedulerType uenib_api.RSMSchedulerType
 		switch ulSliceItem.GetSliceParameters().GetSchedulerType() {
@@ -617,19 +807,38 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			return fmt.Errorf("not supported scheduler type: %v", ulSliceItem.GetSliceParameters().GetSchedulerType())
 		}
 
-		sliceInfo := &uenib_api.SliceInfo{
-			DuE2NodeId: duNodeID,
-			CuE2NodeId: string(cuNodeID),
-			ID:         req.GetUlSliceId(),
-			SliceParameters: &uenib_api.RSMSliceParameters{
-				SchedulerType: ulSliceSchedulerType,
-				Weight:        ulSliceItem.GetSliceParameters().Weight,
-				QosLevel:      ulSliceItem.GetSliceParameters().QosLevel,
-			},
-			SliceType: uenib_api.RSMSliceType_SLICE_TYPE_UL_SLICE,
+		isUenibSliceUpdated := false
+		for i := 0; i < len(rsmUEInfo.SliceList); i++ {
+			if rsmUEInfo.SliceList[i].GetDrbId().GetFiveGdrbId() != nil {
+				if rsmUEInfo.SliceList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) {
+					rsmUEInfo.SliceList[i].DrbId = uenibDrbID
+					isUenibSliceUpdated = true
+				}
+			}
+			if rsmUEInfo.SliceList[i].GetDrbId().GetFourGdrbId() != nil {
+				if rsmUEInfo.SliceList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) {
+					rsmUEInfo.SliceList[i].DrbId = uenibDrbID
+					isUenibSliceUpdated = true
+				}
+			}
 		}
 
-		rsmUEInfo.SliceList = append(rsmUEInfo.SliceList, sliceInfo)
+		if !isUenibSliceUpdated {
+			sliceInfo := &uenib_api.SliceInfo{
+				DuE2NodeId: duNodeID,
+				CuE2NodeId: string(cuNodeID),
+				ID:         req.GetUlSliceId(),
+				SliceParameters: &uenib_api.RSMSliceParameters{
+					SchedulerType: ulSliceSchedulerType,
+					Weight:        ulSliceItem.GetSliceParameters().Weight,
+					QosLevel:      ulSliceItem.GetSliceParameters().QosLevel,
+				},
+				SliceType: uenib_api.RSMSliceType_SLICE_TYPE_UL_SLICE,
+				DrbId:     uenibDrbID,
+			}
+
+			rsmUEInfo.SliceList = append(rsmUEInfo.SliceList, sliceInfo)
+		}
 		err = m.uenibClient.UpdateUE(ctx, rsmUEInfo)
 		if err != nil {
 			return fmt.Errorf("Failed to update uenib: %v", err)
@@ -637,6 +846,39 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 	}
 
 	if hasDlSliceItem {
+		dlSliceItems, err := m.rnibClient.GetRsmSliceItemAspects(ctx, topoapi.ID(duNodeID))
+		if err != nil {
+			return fmt.Errorf("failed to get slice item list from R-NIB: %v", err)
+		}
+		for _, oldDlItem := range dlSliceItems {
+			changed := false
+			for i := 0; i < len(oldDlItem.UeIdList); i++ {
+				if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId() != nil {
+					if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
+						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE {
+						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
+						i--
+						changed = true
+					}
+				} else if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId() != nil && oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID {
+					if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
+						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE {
+						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
+						i--
+						changed = true
+					}
+				}
+			}
+			if changed {
+				err = m.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(req.GetE2NodeId()), oldDlItem)
+				if err != nil {
+					return fmt.Errorf("failed to update UL slice item top onos-topo(ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE, err)
+				}
+			}
+		}
+
 		dlSliceItem, err := m.rnibClient.GetRsmSliceItemAspect(ctx, topoapi.ID(duNodeID), req.GetDlSliceId(), rsmapi.SliceType_SLICE_TYPE_DL_SLICE)
 		if err != nil {
 			return fmt.Errorf("failed to get DL slice item (ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetDlSliceId(), rsmapi.SliceType_SLICE_TYPE_DL_SLICE, err)
@@ -646,18 +888,18 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			dlSliceItem.UeIdList = make([]*topoapi.UeIdentity, 0)
 		}
 
+		ueIDforTopo.DrbId = topoDrbID
 		dlSliceItem.UeIdList = append(dlSliceItem.UeIdList, ueIDforTopo)
+
 		err = m.rnibClient.UpdateRsmSliceItemAspect(ctx, topoapi.ID(req.GetE2NodeId()), dlSliceItem)
 		if err != nil {
-			return fmt.Errorf("failed to update DL slice item top onos-topo(ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetDlSliceId(), rsmapi.SliceType_SLICE_TYPE_DL_SLICE, err)
+			return fmt.Errorf("failed to update UL slice item top onos-topo(ID - %v, sliceID - %v, sliceType - %v): %v", duNodeID, req.GetUlSliceId(), rsmapi.SliceType_SLICE_TYPE_UL_SLICE, err)
 		}
 
 		// Update uenib
-		log.Infof("Woojoong-1: %v", rsmUEInfo)
 		if rsmUEInfo.GetSliceList() == nil || len(rsmUEInfo.GetSliceList()) == 0 {
 			rsmUEInfo.SliceList = make([]*uenib_api.SliceInfo, 0)
 		}
-		log.Infof("Woojoong-2: %v", rsmUEInfo)
 
 		var dlSliceSchedulerType uenib_api.RSMSchedulerType
 		switch dlSliceItem.GetSliceParameters().GetSchedulerType() {
@@ -671,6 +913,21 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			return fmt.Errorf("not supported scheduler type: %v", dlSliceItem.GetSliceParameters().GetSchedulerType())
 		}
 
+		for i := 0; i < len(rsmUEInfo.SliceList); i++ {
+			if rsmUEInfo.SliceList[i].GetDrbId().GetFiveGdrbId() != nil {
+				if rsmUEInfo.SliceList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) {
+					rsmUEInfo.SliceList = append(rsmUEInfo.SliceList[:i], rsmUEInfo.SliceList[i+1:]...)
+					i--
+				}
+			}
+			if rsmUEInfo.SliceList[i].GetDrbId().GetFourGdrbId() != nil {
+				if rsmUEInfo.SliceList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) {
+					rsmUEInfo.SliceList = append(rsmUEInfo.SliceList[:i], rsmUEInfo.SliceList[i+1:]...)
+					i--
+				}
+			}
+		}
+
 		sliceInfo := &uenib_api.SliceInfo{
 			DuE2NodeId: duNodeID,
 			CuE2NodeId: string(cuNodeID),
@@ -681,9 +938,11 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 				QosLevel:      dlSliceItem.GetSliceParameters().QosLevel,
 			},
 			SliceType: uenib_api.RSMSliceType_SLICE_TYPE_DL_SLICE,
+			DrbId:     uenibDrbID,
 		}
 
 		rsmUEInfo.SliceList = append(rsmUEInfo.SliceList, sliceInfo)
+
 		err = m.uenibClient.UpdateUE(ctx, rsmUEInfo)
 		if err != nil {
 			return fmt.Errorf("Failed to update uenib: %v", err)
