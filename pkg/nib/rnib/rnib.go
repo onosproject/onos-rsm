@@ -42,6 +42,7 @@ type TopoClient interface {
 	UpdateRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, msg *topoapi.RSMSlicingItem) error
 	DeleteRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string) error
 	GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) (*topoapi.RSMSlicingItem, error)
+	GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error)
 	DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error
 }
 
@@ -64,6 +65,16 @@ func (t *topoClient) DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) 
 	}
 
 	return nil
+}
+
+func (t *topoClient) GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error) {
+	rsmSliceList, err := t.GetRsmSliceListAspect(ctx, nodeID)
+	if err != nil {
+		return nil, errors.NewNotFound("node %v has no slices", nodeID)
+	}
+
+
+	return rsmSliceList.GetRsmSliceList(), nil
 }
 
 func (t *topoClient) GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) (*topoapi.RSMSlicingItem, error) {
