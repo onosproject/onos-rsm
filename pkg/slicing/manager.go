@@ -270,7 +270,7 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 	}
 
 	ueIDList := sliceAspect.GetUeIdList()
-	if ueIDList == nil || len(ueIDList) == 0 {
+	if len(ueIDList) == 0 {
 		ueIDList = make([]*topoapi.UeIdentity, 0)
 	}
 
@@ -305,7 +305,10 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 			}
 		}
 		if changed {
-			m.uenibClient.UpdateUE(ctx, ues[i])
+			err = m.uenibClient.UpdateUE(ctx, ues[i])
+			if err != nil {
+				return fmt.Errorf("failed to update UENIB: %v", err)
+			}
 		}
 	}
 
@@ -388,7 +391,10 @@ func (m *Manager) handleNbiDeleteSliceRequest(ctx context.Context, req *rsmapi.D
 			}
 		}
 		if changed {
-			m.uenibClient.UpdateUE(ctx, ues[i])
+			err = m.uenibClient.UpdateUE(ctx, ues[i])
+			if err != nil {
+				return fmt.Errorf("failed to update UENIB: %v", err)
+			}
 		}
 	}
 
@@ -686,18 +692,18 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 						paramTopo = &topoapi.QoSflowLevelParameters{
 							QosFlowLevelParameters: &topoapi.QoSflowLevelParameters_DynamicFiveQi{
 								DynamicFiveQi: &topoapi.DynamicFiveQi{
-									PriorityLevel: flow.GetDynamicFiveQi().GetPriorityLevel(),
+									PriorityLevel:    flow.GetDynamicFiveQi().GetPriorityLevel(),
 									PacketDelayBudge: flow.GetDynamicFiveQi().GetPacketDelayBudge(),
-									PacketErrorRate: flow.GetDynamicFiveQi().GetPacketErrorRate(),
+									PacketErrorRate:  flow.GetDynamicFiveQi().GetPacketErrorRate(),
 								},
 							},
 						}
 						paramUenib = &uenib_api.QoSflowLevelParameters{
 							QosFlowLevelParameters: &uenib_api.QoSflowLevelParameters_DynamicFiveQi{
 								DynamicFiveQi: &uenib_api.DynamicFiveQi{
-									PriorityLevel: flow.GetDynamicFiveQi().GetPriorityLevel(),
+									PriorityLevel:    flow.GetDynamicFiveQi().GetPriorityLevel(),
 									PacketDelayBudge: flow.GetDynamicFiveQi().GetPacketDelayBudge(),
-									PacketErrorRate: flow.GetDynamicFiveQi().GetPacketErrorRate(),
+									PacketErrorRate:  flow.GetDynamicFiveQi().GetPacketErrorRate(),
 								},
 							},
 						}
@@ -743,7 +749,7 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			for i := 0; i < len(oldDlItem.UeIdList); i++ {
 				if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId() != nil {
 					if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) &&
-						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID  &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
 						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE {
 						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
 						i--
@@ -751,7 +757,7 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 					}
 				} else if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId() != nil && oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID {
 					if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) &&
-						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID  &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
 						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_UL_SLICE {
 						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
 						i--
@@ -849,7 +855,7 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			for i := 0; i < len(oldDlItem.UeIdList); i++ {
 				if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId() != nil {
 					if oldDlItem.UeIdList[i].GetDrbId().GetFiveGdrbId().GetValue() == int32(drbID) &&
-						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID  &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
 						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE {
 						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
 						i--
@@ -857,7 +863,7 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 					}
 				} else if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId() != nil && oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID {
 					if oldDlItem.UeIdList[i].GetDrbId().GetFourGdrbId().GetValue() == int32(drbID) &&
-						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID  &&
+						oldDlItem.UeIdList[i].GetDuUeF1apID().GetValue() == DuUeF1apID &&
 						oldDlItem.SliceType == topoapi.RSMSliceType_SLICE_TYPE_DL_SLICE {
 						oldDlItem.UeIdList = append(oldDlItem.UeIdList[:i], oldDlItem.UeIdList[i+1:]...)
 						i--
@@ -932,7 +938,7 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 				QosLevel:      dlSliceItem.GetSliceParameters().QosLevel,
 			},
 			SliceType: uenib_api.RSMSliceType_SLICE_TYPE_DL_SLICE,
-			DrbId: uenibDrbID,
+			DrbId:     uenibDrbID,
 		}
 
 		rsmUEInfo.SliceList = append(rsmUEInfo.SliceList, sliceInfo)

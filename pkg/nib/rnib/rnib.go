@@ -73,7 +73,6 @@ func (t *topoClient) GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.
 		return nil, errors.NewNotFound("node %v has no slices", nodeID)
 	}
 
-
 	return rsmSliceList.GetRsmSliceList(), nil
 }
 
