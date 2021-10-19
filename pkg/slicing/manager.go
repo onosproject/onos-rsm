@@ -158,15 +158,18 @@ func (m *Manager) handleNbiCreateSliceRequest(ctx context.Context, req *rsmapi.C
 		m.ctrlReqChsSliceCreate[string(nodeID)] <- msg
 	}()
 
-	var ack e2.Ack
-	select {
-	case <-time.After(time.Duration(m.ackTimer) * time.Second):
-		return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
-	case ack = <-ackCh:
-	}
+	// ackTimer -1 is for uenib/topo debugging and integration test
+	if m.ackTimer != -1 {
+		var ack e2.Ack
+		select {
+		case <-time.After(time.Duration(m.ackTimer) * time.Second):
+			return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
+		case ack = <-ackCh:
+		}
 
-	if !ack.Success {
-		return fmt.Errorf("%v", ack.Reason)
+		if !ack.Success {
+			return fmt.Errorf("%v", ack.Reason)
+		}
 	}
 
 	value := &topoapi.RSMSlicingItem{
@@ -253,15 +256,18 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 		m.ctrlReqChsSliceUpdate[string(nodeID)] <- msg
 	}()
 
-	var ack e2.Ack
-	select {
-	case <-time.After(time.Duration(m.ackTimer) * time.Second):
-		return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
-	case ack = <-ackCh:
-	}
+	// ackTimer -1 is for uenib/topo debugging and integration test
+	if m.ackTimer != -1 {
+		var ack e2.Ack
+		select {
+		case <-time.After(time.Duration(m.ackTimer) * time.Second):
+			return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
+		case ack = <-ackCh:
+		}
 
-	if !ack.Success {
-		return fmt.Errorf("%v", ack.Reason)
+		if !ack.Success {
+			return fmt.Errorf("%v", ack.Reason)
+		}
 	}
 
 	sliceAspect, err := m.rnibClient.GetRsmSliceItemAspect(ctx, topoapi.ID(req.E2NodeId), req.SliceId, req.GetSliceType())
@@ -360,15 +366,18 @@ func (m *Manager) handleNbiDeleteSliceRequest(ctx context.Context, req *rsmapi.D
 		m.ctrlReqChsSliceDelete[string(nodeID)] <- msg
 	}()
 
-	var ack e2.Ack
-	select {
-	case <-time.After(time.Duration(m.ackTimer) * time.Second):
-		return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
-	case ack = <-ackCh:
-	}
+	// ackTimer -1 is for uenib/topo debugging and integration test
+	if m.ackTimer != -1 {
+		var ack e2.Ack
+		select {
+		case <-time.After(time.Duration(m.ackTimer) * time.Second):
+			return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
+		case ack = <-ackCh:
+		}
 
-	if !ack.Success {
-		return fmt.Errorf("%v", ack.Reason)
+		if !ack.Success {
+			return fmt.Errorf("%v", ack.Reason)
+		}
 	}
 
 	err = m.rnibClient.DeleteRsmSliceItemAspect(ctx, nodeID, req.SliceId)
@@ -601,15 +610,18 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 		m.ctrlReqChsUeAssociate[string(nodeID)] <- msg
 	}()
 
-	var ack e2.Ack
-	select {
-	case <-time.After(time.Duration(m.ackTimer) * time.Second):
-		return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
-	case ack = <-ackCh:
-	}
+	// ackTimer -1 is for uenib/topo debugging and integration test
+	if m.ackTimer != -1 {
+		var ack e2.Ack
+		select {
+		case <-time.After(time.Duration(m.ackTimer) * time.Second):
+			return fmt.Errorf("timeout happens: E2 SBI could not send ACK until timer expired")
+		case ack = <-ackCh:
+		}
 
-	if !ack.Success {
-		return fmt.Errorf("%v", ack.Reason)
+		if !ack.Success {
+			return fmt.Errorf("%v", ack.Reason)
+		}
 	}
 
 	err = m.uenibClient.UpdateUE(ctx, rsmUEInfo)
