@@ -9,7 +9,6 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/manager"
 	"github.com/onosproject/onos-rsm/test/utils"
 	"github.com/stretchr/testify/assert"
-	"sync"
 	"testing"
 )
 
@@ -43,92 +42,24 @@ func (s *TestSuite) TestSlice(t *testing.T) {
 	mgr.Run()
 
 	t.Log("Adding Mock CUs")
-	crtCUErrCh := make(chan error)
-	crtCUSuccCh := make(chan struct{})
-	crtCUWg := sync.WaitGroup{}
-	crtCUWg.Add(numCUs)
-
-	go func() {
-		crtCUWg.Wait()
-		crtCUSuccCh <- struct{}{}
-	}()
-
 	for i := 1; i <= numCUs; i++ {
-		go func (i int) {
-			defer crtCUWg.Done()
-			err := utils.CreateMockE2Node(i, utils.CUDUTypeCU)
-			if err != nil {
-				crtCUErrCh <- err
-			}
-		}(i)
-	}
-
-	select {
-	case e := <- crtCUErrCh:
-		assert.NoError(t, e)
-		if err != nil {
-			return
-		}
-	case <- crtCUSuccCh:
+		err = utils.CreateMockE2Node(i, utils.CUDUTypeCU)
+		assert.NoError(t, err)
 	}
 
 	t.Log("Adding Mock DUs")
-	crtDUErrCh := make(chan error)
-	crtDUSuccCh := make(chan struct{})
-	crtDUWg := sync.WaitGroup{}
-	crtDUWg.Add(numDUs)
-
-	go func() {
-		crtDUWg.Wait()
-		crtDUSuccCh <- struct{}{}
-	}()
-	for i := 1; i <= numDUs; i++ {
-		go func (i int) {
-			err := utils.CreateMockE2Node(i, utils.CUDUTypeDU)
-			if err != nil {
-				crtDUErrCh <- err
-			}
-		}(i)
-	}
-
-	select {
-	case e := <- crtDUErrCh:
-		assert.NoError(t, e)
-		if err != nil {
-			return
-		}
-	case <- crtDUSuccCh:
+	for i := 1; i <= numCUs; i++ {
+		err = utils.CreateMockE2Node(i, utils.CUDUTypeDU)
+		assert.NoError(t, err)
 	}
 
 	t.Log("Adding Mock UE")
-	crtUEErrCh := make(chan error)
-	crtUESuccCh := make(chan struct{})
-	crtUEWg := sync.WaitGroup{}
-	crtUEWg.Add(numDUs * numUEsPerDU)
-
-	go func() {
-		crtUEWg.Wait()
-		crtUESuccCh <- struct{}{}
-	}()
 	for i := 1; i <= numDUs; i++ {
 		for j := 1; j <= numUEsPerDU; j++ {
-			go func(i int, j int) {
-				tmpUEID := (i-1)*numUEsPerDU + j
-				err := utils.CreateMockUE(i, i, tmpUEID)
-				if err != nil {
-					crtUEErrCh <- err
-				}
-			}(i, j)
+			tmpUEID := (i-1)*numUEsPerDU + j
+			err = utils.CreateMockUE(i, i, tmpUEID)
+			assert.NoError(t, err)
 		}
-	}
-
-	select {
-	case e := <- crtUEErrCh:
-		assert.NoError(t, e)
-		if err != nil {
-			return
-		}
-	case <- crtUESuccCh:
 	}
 
 	t.Log("Case 1: Creating three slices per DU")

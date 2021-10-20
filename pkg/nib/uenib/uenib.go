@@ -114,15 +114,33 @@ func (c *client) UpdateUE(ctx context.Context, ue *uenib.RsmUeInfo) error {
 		return errors.NewNotFound(fmt.Sprintf("UE not found - UE: %v", *ue))
 	}
 
-	err := c.DeleteUE(ctx, ue.GetGlobalUeID())
+	uenibObj := uenib.UE{
+		ID:      uenib.ID(ue.GetGlobalUeID()),
+		Aspects: make(map[string]*types.Any),
+	}
+
+	jm := jsonpb.Marshaler{}
+	writer := bytes.Buffer{}
+	err := jm.Marshal(&writer, ue)
 	if err != nil {
 		return err
 	}
 
-	err = c.AddUE(ctx, ue)
+	uenibObj.Aspects[proto.MessageName(ue)] = &types.Any{
+		TypeUrl: proto.MessageName(ue),
+		Value:   writer.Bytes(),
+	}
+
+	req := &uenib.UpdateUERequest{
+		UE: uenibObj,
+	}
+
+	resp, err := c.client.UpdateUE(ctx, req)
 	if err != nil {
 		return err
 	}
+
+	log.Debugf("Update UE Resp: %v", resp)
 
 	return nil
 }
