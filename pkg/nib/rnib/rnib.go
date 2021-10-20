@@ -44,6 +44,7 @@ type TopoClient interface {
 	GetRsmSliceItemAspect(ctx context.Context, nodeID topoapi.ID, sliceID string, sliceType rsm.SliceType) (*topoapi.RSMSlicingItem, error)
 	GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error)
 	DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error
+	GetRSMSliceItemAspectsForAllDUs(ctx context.Context) (map[string][]*topoapi.RSMSlicingItem, error)
 }
 
 type topoClient struct {
@@ -312,4 +313,27 @@ func (t *topoClient) GetSourceCUE2NodeID(ctx context.Context, duE2NodeID topoapi
 	}
 
 	return "", errors.NewNotFound(fmt.Sprintf("CU-ID not found (DU-ID: %v)", duE2NodeID))
+}
+
+func (t *topoClient) GetRSMSliceItemAspectsForAllDUs(ctx context.Context) (map[string][]*topoapi.RSMSlicingItem, error) {
+	results := make(map[string][]*topoapi.RSMSlicingItem)
+	objects, err := t.client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, obj := range objects {
+		if obj.GetEntity() != nil && obj.GetEntity().GetKindID() == topoapi.E2NODE {
+			if obj.GetEntity() != nil && obj.GetEntity().GetKindID() == topoapi.E2NODE && len(strings.Split(string(obj.GetID()), "/")) == 4 && strings.Split(string(obj.GetID()), "/")[2] == "3" {
+				value := &topoapi.RSMSliceItemList{}
+				err = obj.GetAspect(value)
+				if err != nil {
+					return nil, err
+				}
+				results[string(obj.GetID())] = value.GetRsmSliceList()
+			}
+		}
+	}
+
+	return results, nil
 }

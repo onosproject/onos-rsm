@@ -11,6 +11,7 @@ import (
 	rsmapi "github.com/onosproject/onos-api/go/onos/rsm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"sync"
 )
 
 func NewConnection() (*grpc.ClientConn, error) {
@@ -36,7 +37,7 @@ func NewConnection() (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func CmdCreateSlice1() error {
+func CmdCreateSlice(duIndex int, numDUs int, sliceIndex int, numSlices int) error {
 	conn, err := NewConnection()
 	if err != nil {
 		return err
@@ -44,31 +45,57 @@ func CmdCreateSlice1() error {
 	defer conn.Close()
 	client := rsmapi.NewRsmClient(conn)
 
-	e2NodeID := MockDUE2NodeID
-	sliceID := Slice1ID
-	schedulerType := Slice1Sched
-	weight := Slice1Weight1
-	sliceType := Slice1Type
+	wg := sync.WaitGroup{}
+	wg.Add(numDUs)
+	errCh := make(chan error)
+	succ := make(chan struct{})
 
-	setRequest := rsmapi.CreateSliceRequest{
-		E2NodeId:      e2NodeID,
-		SliceId:       sliceID,
-		Weight:        weight,
-		SchedulerType: schedulerType,
-		SliceType:     sliceType,
+	go func() {
+		wg.Wait()
+		succ <- struct{}{}
+	}()
+
+	for i := duIndex; i <= numDUs; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := sliceIndex; j <= numSlices; j++ {
+				e2NodeID := GetMockDUE2NodeID(i)
+				sliceID := GetSliceID(j)
+				schedulerType := SliceSched
+				weight := GetSliceWeights(j)
+				sliceType := SliceType
+
+				setRequest := rsmapi.CreateSliceRequest{
+					E2NodeId:      e2NodeID,
+					SliceId:       fmt.Sprintf("%d", sliceID),
+					Weight:        fmt.Sprintf("%d", weight),
+					SchedulerType: schedulerType,
+					SliceType:     sliceType,
+				}
+
+				resp, err := client.CreateSlice(context.Background(), &setRequest)
+				if err != nil {
+					errCh <- err
+				}
+				if !resp.GetAck().GetSuccess() {
+					errCh <- fmt.Errorf(resp.GetAck().GetCause())
+				}
+			}
+		}(i)
 	}
 
-	resp, err := client.CreateSlice(context.Background(), &setRequest)
-	if err != nil {
-		return err
+	select {
+	case <- succ:
+		close(errCh)
+	case e := <- errCh:
+		close(errCh)
+		return e
 	}
-	if !resp.GetAck().GetSuccess() {
-		return fmt.Errorf(resp.GetAck().GetCause())
-	}
+
 	return nil
 }
 
-func CmdUpdateSlice1() error {
+func CmdUpdateSlice(duIndex int, numDUs int, sliceIndex int, numSlices int) error {
 	conn, err := NewConnection()
 	if err != nil {
 		return err
@@ -76,31 +103,62 @@ func CmdUpdateSlice1() error {
 	defer conn.Close()
 	client := rsmapi.NewRsmClient(conn)
 
-	e2NodeID := MockDUE2NodeID
-	sliceID := Slice1ID
-	schedulerType := Slice1Sched
-	weight := Slice1Weight2
-	sliceType := Slice1Type
+	wg := sync.WaitGroup{}
+	wg.Add(numDUs)
+	errCh := make(chan error)
+	succ := make(chan struct{})
 
-	setRequest := rsmapi.UpdateSliceRequest{
-		E2NodeId:      e2NodeID,
-		SliceId:       sliceID,
-		Weight:        weight,
-		SchedulerType: schedulerType,
-		SliceType:     sliceType,
+	go func() {
+		wg.Wait()
+		succ <- struct{}{}
+	}()
+
+	for i := duIndex; i <= numDUs; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := sliceIndex; j <= numSlices; j++ {
+				e2NodeID := GetMockDUE2NodeID(i)
+				sliceID := GetSliceID(j)
+				schedulerType := SliceSched
+				weight := GetSliceUpdatedWeights(j)
+				sliceType := SliceType
+
+				setRequest := rsmapi.UpdateSliceRequest{
+					E2NodeId:      e2NodeID,
+					SliceId:       fmt.Sprintf("%d", sliceID),
+					Weight:        fmt.Sprintf("%d", weight),
+					SchedulerType: schedulerType,
+					SliceType:     sliceType,
+				}
+
+				resp, err := client.UpdateSlice(context.Background(), &setRequest)
+				if err != nil {
+					errCh <- err
+				}
+				if !resp.GetAck().GetSuccess() {
+					errCh <- fmt.Errorf(resp.GetAck().GetCause())
+				}
+			}
+		}(i)
 	}
 
-	resp, err := client.UpdateSlice(context.Background(), &setRequest)
-	if err != nil {
-		return err
+	select {
+	case <- succ:
+		close(errCh)
+	case e := <- errCh:
+		close(errCh)
+		return e
 	}
-	if !resp.GetAck().GetSuccess() {
-		return fmt.Errorf(resp.GetAck().GetCause())
-	}
+
 	return nil
 }
 
-func CmdAssociateUE1WithSlice1() error {
+func CmdAssociateUEWithSlice(duIndex int, numDUs int, sliceIndex int, numSlices int, numUEs int) error {
+	// precheck
+	if numDUs*numSlices > numUEs {
+		return fmt.Errorf("the number of DUs times the number of slices should be more than the number of UEs")
+	}
+
 	conn, err := NewConnection()
 	if err != nil {
 		return err
@@ -108,35 +166,61 @@ func CmdAssociateUE1WithSlice1() error {
 	defer conn.Close()
 	client := rsmapi.NewRsmClient(conn)
 
-	e2NodeID := MockDUE2NodeID
-	sliceID := Slice1ID
-	drbID := Ue1DrbID
-	duUEID := DUUEF1apID
-	idList := make([]*rsmapi.UeId, 0)
-	duUeF1apIDField := &rsmapi.UeId{
-		UeId: fmt.Sprintf("%d", duUEID),
-		Type: rsmapi.UeIdType_UE_ID_TYPE_DU_UE_F1_AP_ID,
-	}
-	idList = append(idList, duUeF1apIDField)
+	wg := sync.WaitGroup{}
+	wg.Add(numDUs)
+	errCh := make(chan error)
+	succ := make(chan struct{})
 
-	setRequest := rsmapi.SetUeSliceAssociationRequest{
-		E2NodeId:  e2NodeID,
-		UeId:      idList,
-		DlSliceId: sliceID,
-		DrbId:     fmt.Sprintf("%d", drbID),
+	go func() {
+		wg.Wait()
+		succ <- struct{}{}
+	}()
+
+	for i := duIndex; i <= numDUs; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := sliceIndex; j <= numSlices; j++ {
+				tmpUEIndex := (i-1)*numSlices + j
+				e2NodeID := GetMockDUE2NodeID(i)
+				sliceID := GetSliceID(j)
+				drbID := GetDrbID(tmpUEIndex)
+				duUEID := GetDUUEF1apID(tmpUEIndex)
+				idList := make([]*rsmapi.UeId, 0)
+				duUeF1apIDField := &rsmapi.UeId{
+					UeId: fmt.Sprintf("%d", duUEID),
+					Type: rsmapi.UeIdType_UE_ID_TYPE_DU_UE_F1_AP_ID,
+				}
+				idList = append(idList, duUeF1apIDField)
+
+				setRequest := rsmapi.SetUeSliceAssociationRequest{
+					E2NodeId:  e2NodeID,
+					UeId:      idList,
+					DlSliceId: fmt.Sprintf("%d", sliceID),
+					DrbId:     fmt.Sprintf("%d", drbID),
+				}
+				resp, err := client.SetUeSliceAssociation(context.Background(), &setRequest)
+				if err != nil {
+					errCh <- err
+				}
+				if !resp.GetAck().GetSuccess() {
+					errCh <- fmt.Errorf(resp.GetAck().GetCause())
+				}
+			}
+		}(i)
 	}
 
-	resp, err := client.SetUeSliceAssociation(context.Background(), &setRequest)
-	if err != nil {
-		return err
+	select {
+	case <- succ:
+		close(errCh)
+	case e := <- errCh:
+		close(errCh)
+		return e
 	}
-	if !resp.GetAck().GetSuccess() {
-		return fmt.Errorf(resp.GetAck().GetCause())
-	}
+
 	return nil
 }
 
-func CmdDeleteSlice1() error {
+func CmdDeleteSlice(duIndex int, numDUs int, sliceIndex int, numSlices int) error {
 	conn, err := NewConnection()
 	if err != nil {
 		return err
@@ -144,22 +228,47 @@ func CmdDeleteSlice1() error {
 	defer conn.Close()
 	client := rsmapi.NewRsmClient(conn)
 
-	e2NodeID := MockDUE2NodeID
-	sliceID := Slice1ID
-	sliceType := Slice1Type
+	wg := sync.WaitGroup{}
+	wg.Add(numDUs)
+	errCh := make(chan error)
+	succ := make(chan struct{})
 
-	setRequest := rsmapi.DeleteSliceRequest{
-		E2NodeId:  e2NodeID,
-		SliceId:   sliceID,
-		SliceType: sliceType,
+	go func() {
+		wg.Wait()
+		succ <- struct{}{}
+	}()
+
+	for i := duIndex; i <= numDUs; i++ {
+		go func(i int) {
+			defer wg.Done()
+			for j := sliceIndex; j <= numSlices; j++ {
+				e2NodeID := GetMockDUE2NodeID(i)
+				sliceID := GetSliceID(j)
+				sliceType := SliceType
+
+				setRequest := rsmapi.DeleteSliceRequest{
+					E2NodeId:  e2NodeID,
+					SliceId:   fmt.Sprintf("%d", sliceID),
+					SliceType: sliceType,
+				}
+				resp, err := client.DeleteSlice(context.Background(), &setRequest)
+				if err != nil {
+					errCh <- err
+				}
+				if !resp.GetAck().GetSuccess() {
+					errCh <- fmt.Errorf(resp.GetAck().GetCause())
+				}
+			}
+		}(i)
 	}
 
-	resp, err := client.DeleteSlice(context.Background(), &setRequest)
-	if err != nil {
-		return err
+	select {
+	case <- succ:
+		close(errCh)
+	case e := <- errCh:
+		close(errCh)
+		return e
 	}
-	if !resp.GetAck().GetSuccess() {
-		return fmt.Errorf(resp.GetAck().GetCause())
-	}
+
 	return nil
 }
