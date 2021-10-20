@@ -15,8 +15,8 @@ import (
 
 func NewConnection() (*grpc.ClientConn, error) {
 	address := ":5150"
-	certPath := TlsCrtPath
-	keyPath := TlsKeyPath
+	certPath := TLSCrtPath
+	keyPath := TLSKeyPath
 	var opts []grpc.DialOption
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
@@ -83,11 +83,11 @@ func CmdUpdateSlice1() error {
 	sliceType := Slice1Type
 
 	setRequest := rsmapi.UpdateSliceRequest{
-		E2NodeId: e2NodeID,
-		SliceId: sliceID,
-		Weight: weight,
+		E2NodeId:      e2NodeID,
+		SliceId:       sliceID,
+		Weight:        weight,
 		SchedulerType: schedulerType,
-		SliceType: sliceType,
+		SliceType:     sliceType,
 	}
 
 	resp, err := client.UpdateSlice(context.Background(), &setRequest)
@@ -120,10 +120,10 @@ func CmdAssociateUE1WithSlice1() error {
 	idList = append(idList, duUeF1apIDField)
 
 	setRequest := rsmapi.SetUeSliceAssociationRequest{
-		E2NodeId: e2NodeID,
-		UeId: idList,
+		E2NodeId:  e2NodeID,
+		UeId:      idList,
 		DlSliceId: sliceID,
-		DrbId: fmt.Sprintf("%d", drbID),
+		DrbId:     fmt.Sprintf("%d", drbID),
 	}
 
 	resp, err := client.SetUeSliceAssociation(context.Background(), &setRequest)
@@ -149,8 +149,8 @@ func CmdDeleteSlice1() error {
 	sliceType := Slice1Type
 
 	setRequest := rsmapi.DeleteSliceRequest{
-		E2NodeId: e2NodeID,
-		SliceId: sliceID,
+		E2NodeId:  e2NodeID,
+		SliceId:   sliceID,
 		SliceType: sliceType,
 	}
 

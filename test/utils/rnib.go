@@ -28,7 +28,7 @@ func AddMockCUE2Node() error {
 	}
 
 	obj := &topoapi.Object{
-		ID: topoapi.ID(MockCUE2NodeID),
+		ID:   topoapi.ID(MockCUE2NodeID),
 		UUID: topoapi.UUID(uuid.New().String()),
 		Type: topoapi.Object_ENTITY,
 		Obj: &topoapi.Object_Entity{
@@ -44,8 +44,8 @@ func AddMockCUE2Node() error {
 	}
 
 	rsmSMInfo := &topoapi.ServiceModelInfo{
-		OID: RSMSmOID,
-		Name: RSMSmName,
+		OID:          RSMSmOID,
+		Name:         RSMSmName,
 		RanFunctions: make([]*types.Any, 0),
 	}
 
@@ -65,6 +65,9 @@ func AddMockCUE2Node() error {
 	rsmSmRanFunc.RicSlicingNodeCapabilityList = append(rsmSmRanFunc.RicSlicingNodeCapabilityList, rsmNodeSlicingCapItem)
 
 	rsmSmRanFuncAny, err := prototypes.MarshalAny(rsmSmRanFunc)
+	if err != nil {
+		return err
+	}
 
 	rsmSMInfo.RanFunctions = append(rsmSMInfo.RanFunctions, rsmSmRanFuncAny)
 
@@ -79,7 +82,7 @@ func AddMockCUE2Node() error {
 
 	obj.Aspects[proto.MessageName(topoE2NodeAspect)] = &types.Any{
 		TypeUrl: proto.MessageName(topoE2NodeAspect),
-		Value: writer.Bytes(),
+		Value:   writer.Bytes(),
 	}
 
 	return client.Create(context.Background(), obj)
@@ -92,7 +95,7 @@ func AddMockDUE2Node() error {
 	}
 
 	obj := &topoapi.Object{
-		ID: topoapi.ID(MockDUE2NodeID),
+		ID:   topoapi.ID(MockDUE2NodeID),
 		UUID: topoapi.UUID(uuid.New().String()),
 		Type: topoapi.Object_ENTITY,
 		Obj: &topoapi.Object_Entity{
@@ -108,8 +111,8 @@ func AddMockDUE2Node() error {
 	}
 
 	rsmSMInfo := &topoapi.ServiceModelInfo{
-		OID: RSMSmOID,
-		Name: RSMSmName,
+		OID:          RSMSmOID,
+		Name:         RSMSmName,
 		RanFunctions: make([]*types.Any, 0),
 	}
 
@@ -141,6 +144,9 @@ func AddMockDUE2Node() error {
 	rsmSmRanFunc.RicSlicingNodeCapabilityList = append(rsmSmRanFunc.RicSlicingNodeCapabilityList, rsmNodeSlicingCapItem)
 
 	rsmSmRanFuncAny, err := prototypes.MarshalAny(rsmSmRanFunc)
+	if err != nil {
+		return err
+	}
 
 	rsmSMInfo.RanFunctions = append(rsmSMInfo.RanFunctions, rsmSmRanFuncAny)
 
@@ -155,9 +161,8 @@ func AddMockDUE2Node() error {
 
 	obj.Aspects[proto.MessageName(topoE2NodeAspect)] = &types.Any{
 		TypeUrl: proto.MessageName(topoE2NodeAspect),
-		Value: writer.Bytes(),
+		Value:   writer.Bytes(),
 	}
 
 	return client.Create(context.Background(), obj)
 }
-

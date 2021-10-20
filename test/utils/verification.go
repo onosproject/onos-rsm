@@ -107,7 +107,7 @@ func VerifyCase3AssociatingUEWithSlice() error {
 	if err != nil {
 		return err
 	}
-	uenibClient, err := uenib.NewClient(context.Background(), TlsCrtPath, TlsKeyPath, "onos-uenib:5150")
+	uenibClient, err := uenib.NewClient(context.Background(), TLSCrtPath, TLSKeyPath, "onos-uenib:5150")
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func VerifyCase4DeletingSlice() error {
 	if err != nil {
 		return err
 	}
-	uenibClient, err := uenib.NewClient(context.Background(), TlsCrtPath, TlsKeyPath, "onos-uenib:5150")
+	uenibClient, err := uenib.NewClient(context.Background(), TLSCrtPath, TLSKeyPath, "onos-uenib:5150")
 	if err != nil {
 		return err
 	}

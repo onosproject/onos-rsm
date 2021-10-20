@@ -15,23 +15,23 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
 )
 
-func NewUENibClient(ctx context.Context, certPath string, keyPath string, uenibAddr string) (client, error) {
+func NewUENibClient(ctx context.Context, certPath string, keyPath string, uenibAddr string) (Client, error) {
 	conn, err := southbound.Connect(ctx, uenibAddr, certPath, keyPath)
 	if err != nil {
-		return client{}, err
+		return Client{}, err
 	}
 
-	return client{
+	return Client{
 		client: uenib.NewUEServiceClient(conn),
 	}, nil
 }
 
-type client struct {
+type Client struct {
 	client uenib.UEServiceClient
 }
 
 func AddMockUE() error {
-	client, err := NewUENibClient(context.Background(), TlsCrtPath, TlsKeyPath, "onos-uenib:5150")
+	client, err := NewUENibClient(context.Background(), TLSCrtPath, TLSKeyPath, "onos-uenib:5150")
 	if err != nil {
 		return err
 	}
@@ -76,13 +76,13 @@ func AddMockUE() error {
 		},
 		BearerIdList: bIDList,
 		CellGlobalId: CellGlobalID,
-		CuE2NodeId: MockCUE2NodeID,
-		DuE2NodeId: MockDUE2NodeID,
+		CuE2NodeId:   MockCUE2NodeID,
+		DuE2NodeId:   MockDUE2NodeID,
 		SliceList:    make([]*uenib_api.SliceInfo, 0),
 	}
 
 	obj := uenib.UE{
-		ID: uenib.ID(ueID),
+		ID:      uenib.ID(ueID),
 		Aspects: make(map[string]*types.Any),
 	}
 
@@ -95,7 +95,7 @@ func AddMockUE() error {
 
 	obj.Aspects[proto.MessageName(rsmUEInfo)] = &types.Any{
 		TypeUrl: proto.MessageName(rsmUEInfo),
-		Value: writer.Bytes(),
+		Value:   writer.Bytes(),
 	}
 
 	req := &uenib.CreateUERequest{
