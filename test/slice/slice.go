@@ -15,17 +15,17 @@ import (
 func (s *TestSuite) TestSlice(t *testing.T) {
 
 	cfg := manager.Config{
-		CAPath:     "/tmp/tls.cacrt",
-		KeyPath:    "/tmp/tls.key",
-		CertPath:   "/tmp/tls.crt",
-		ConfigPath: "/tmp/config.json",
+		CAPath:      "/tmp/tls.cacrt",
+		KeyPath:     "/tmp/tls.key",
+		CertPath:    "/tmp/tls.crt",
+		ConfigPath:  "/tmp/config.json",
 		E2tEndpoint: "onos-e2t:5150",
-		GRPCPort: 5150,
-		SMName: "oran-e2sm-rsm",
-		SMVersion: "v1",
-		UenibHost: "onos-uenib:5150",
-		AppID: "onos-rsm",
-		AckTimer: -1, // timer -1 is for integration test or uenib/topo debugging
+		GRPCPort:    5150,
+		SMName:      "oran-e2sm-rsm",
+		SMVersion:   "v1",
+		UenibHost:   "onos-uenib:5150",
+		AppID:       "onos-rsm",
+		AckTimer:    -1, // timer -1 is for integration test or uenib/topo debugging
 	}
 
 	_, err := certs.HandleCertPaths(cfg.CAPath, cfg.KeyPath, cfg.CertPath, true)

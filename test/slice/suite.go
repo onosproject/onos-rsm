@@ -18,15 +18,15 @@ type TestSuite struct {
 
 func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	// write files
-	err := utils.WriteFile(utils.TlsCaCrtPath, utils.TLSCacrt)
+	err := utils.WriteFile(utils.TLSCaCrtPath, utils.TLSCacrt)
 	if err != nil {
 		return err
 	}
-	err = utils.WriteFile(utils.TlsCrtPath, utils.TLSCrt)
+	err = utils.WriteFile(utils.TLSCrtPath, utils.TLSCrt)
 	if err != nil {
 		return err
 	}
-	err = utils.WriteFile(utils.TlsKeyPath, utils.TLSKey)
+	err = utils.WriteFile(utils.TLSKeyPath, utils.TLSKey)
 	if err != nil {
 		return err
 	}
