@@ -159,7 +159,7 @@ func VerifyUESliceAssociationForAllDUsAndUEs(numSlices int) error {
 			return fmt.Errorf("DU UE F1AP ID %v in UENIB %v is wrong. it should be %v", rsmUEInfoAspect.GetGlobalUeID(), rsmUEInfoAspect, GetCUUEF1apID(parsedUEIDIndex))
 		}
 
-		for _, ueSlice  := range rsmUEInfoAspect.GetSliceList() {
+		for _, ueSlice := range rsmUEInfoAspect.GetSliceList() {
 			// slice ID check
 			hasSliceID := false
 			uenibDrbID := ueSlice.GetDrbId().GetFourGdrbId().GetValue()

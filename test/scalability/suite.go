@@ -45,7 +45,7 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	return sdran.Install(true)
 }
 
-//// TearDownTestSuite uninstalls helm chart released
-//func (s *TestSuite) TearDownTestSuite() error {
-//	return s.sdran.Uninstall()
-//}
+// TearDownTestSuite uninstalls helm chart released
+func (s *TestSuite) TearDownTestSuite() error {
+	return s.sdran.Uninstall()
+}

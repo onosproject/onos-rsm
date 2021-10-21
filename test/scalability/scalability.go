@@ -9,6 +9,7 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/manager"
 	"github.com/onosproject/onos-rsm/test/utils"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 )
 
@@ -18,6 +19,78 @@ const (
 	numDUs        = 100
 	numUEsPerDU   = 3
 )
+
+type mockNodeType int
+
+const (
+	CU mockNodeType = iota
+	DU
+	UE
+)
+
+func createMultipleMock(nodeType mockNodeType) error {
+	errCh := make(chan error)
+	succCh := make(chan struct{})
+	wg := sync.WaitGroup{}
+
+	switch nodeType {
+	case CU:
+		wg.Add(numCUs)
+		go func() {
+			wg.Wait()
+			succCh <- struct{}{}
+		}()
+		for i := 1; i <= numCUs; i++ {
+			go func(i int) {
+				defer wg.Done()
+				err := utils.CreateMockE2Node(i, utils.CUDUTypeCU)
+				if err != nil {
+					errCh <- err
+				}
+			}(i)
+		}
+	case DU:
+		wg.Add(numDUs)
+		go func() {
+			wg.Wait()
+			succCh <- struct{}{}
+		}()
+		for i := 1; i <= numCUs; i++ {
+			go func(i int) {
+				defer wg.Done()
+				err := utils.CreateMockE2Node(i, utils.CUDUTypeDU)
+				if err != nil {
+					errCh <- err
+				}
+			}(i)
+		}
+	case UE:
+		wg.Add(numDUs * numUEsPerDU)
+		go func() {
+			wg.Wait()
+			succCh <- struct{}{}
+		}()
+		for i := 1; i <= numDUs; i++ {
+			for j := 1; j <= numUEsPerDU; j++ {
+				go func(i int, j int) {
+					defer wg.Done()
+					tmpUEID := (i-1)*numUEsPerDU + j
+					err := utils.CreateMockUE(i, i, tmpUEID)
+					if err != nil {
+						errCh <- err
+					}
+				}(i, j)
+			}
+		}
+	}
+
+	select {
+	case e := <-errCh:
+		return e
+	case <-succCh:
+	}
+	return nil
+}
 
 func (s *TestSuite) TestSlice(t *testing.T) {
 
@@ -42,24 +115,24 @@ func (s *TestSuite) TestSlice(t *testing.T) {
 	mgr.Run()
 
 	t.Log("Adding Mock CUs")
-	for i := 1; i <= numCUs; i++ {
-		err = utils.CreateMockE2Node(i, utils.CUDUTypeCU)
-		assert.NoError(t, err)
+	err = createMultipleMock(CU)
+	assert.NoError(t, err)
+	if err != nil {
+		return
 	}
 
 	t.Log("Adding Mock DUs")
-	for i := 1; i <= numCUs; i++ {
-		err = utils.CreateMockE2Node(i, utils.CUDUTypeDU)
-		assert.NoError(t, err)
+	err = createMultipleMock(DU)
+	assert.NoError(t, err)
+	if err != nil {
+		return
 	}
 
 	t.Log("Adding Mock UE")
-	for i := 1; i <= numDUs; i++ {
-		for j := 1; j <= numUEsPerDU; j++ {
-			tmpUEID := (i-1)*numUEsPerDU + j
-			err = utils.CreateMockUE(i, i, tmpUEID)
-			assert.NoError(t, err)
-		}
+	err = createMultipleMock(UE)
+	assert.NoError(t, err)
+	if err != nil {
+		return
 	}
 
 	t.Log("Case 1: Creating three slices per DU")
