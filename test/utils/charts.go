@@ -45,9 +45,7 @@ func CreateSdranRelease(c *input.Context) (*helm.HelmRelease, error) {
 		Set("import.onos-topo.enabled", true).
 		Set("import.ran-simulator.enabled", false).
 		Set("import.onos-pci.enabled", false).
-		Set("global.image.registry", registry).
-		Set("onos-e2t.service.external.enabled", true).
-		Set("onos-e2t.service.e2.nodePort", 36421)
+		Set("global.image.registry", registry)
 
 	return sdran, nil
 }
