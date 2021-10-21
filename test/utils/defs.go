@@ -5,6 +5,7 @@
 package utils
 
 import (
+	"fmt"
 	rsmapi "github.com/onosproject/onos-api/go/onos/rsm"
 	"time"
 )
@@ -21,32 +22,60 @@ const (
 
 	TestTimeout = 10 * time.Minute
 
-	MockCUE2NodeID = "e2:4/e00/2/64"
-	MockDUE2NodeID = "e2:4/e00/3/c8"
-
 	RSMSmOID               = "1.3.6.1.4.1.53148.1.1.2.102"
 	RSMSmName              = "ORAN-E2SM-RSM"
 	MaxNumberOfSlicesDl    = 4
 	MaxNumberOfSlicesUl    = 4
 	MaxNumberOfUesPerSlice = 4
 
-	CUUEF1apID   = 26634
-	DUUEF1apID   = 26634
-	MockUEID     = "7a85bdec-87ef-4352-83df-2b652ca08b88"
-	CellGlobalID = "e_utra_cgi:{p_lmnidentity:{value:\"\\x02\\xf8\\x10\"} e_utracell_identity:{value:{value:\"\\x00\\xe0\\x00\\x00\" len:28}}}"
-
 	TLSCaCrtPath = "/tmp/tls.cacrt"
 	TLSCrtPath   = "/tmp/tls.crt"
 	TLSKeyPath   = "/tmp/tls.key"
 
-	Slice1ID      = "1"
-	Slice1Sched   = rsmapi.SchedulerType_SCHEDULER_TYPE_ROUND_ROBIN
-	Slice1Weight1 = "30"
-	Slice1Weight2 = "80"
-	Slice1Type    = rsmapi.SliceType_SLICE_TYPE_DL_SLICE
-
-	IgnoreTimeoutMessage = "timeout happens: E2 SBI could not send ACK until timer expired"
-
-	Ue1DrbID = 5
-	Ue1Qci   = 9
+	SliceSched = rsmapi.SchedulerType_SCHEDULER_TYPE_ROUND_ROBIN
+	SliceType  = rsmapi.SliceType_SLICE_TYPE_DL_SLICE
 )
+
+func GetMockCUE2NodeID(index int) string {
+	return fmt.Sprintf("e2:4/%d/2/64", index)
+}
+
+func GetMockDUE2NodeID(index int) string {
+	return fmt.Sprintf("e2:4/%d/3/c8", index)
+}
+
+func GetCUUEF1apID(index int) int {
+	return index + 10000
+}
+
+func GetDUUEF1apID(index int) int {
+	return index + 10000
+}
+
+func GetMockUEID(index int, cuIndex int, duIndex int) string {
+	return fmt.Sprintf("uuid-ue-%d-%d-%d", cuIndex, duIndex, index)
+}
+
+func GetCGI(index int) string {
+	return fmt.Sprintf("e_utra_cgi:{p_lmnidentity:{value:\"\\x02\\xf8\\x10\"} e_utracell_identity:{value:{value:\"\\x00\\xe0\\x00\\x%d\" len:28}}}", index)
+}
+
+func GetSliceID(index int) int {
+	return [...]int{1, 2, 3}[index-1]
+}
+
+func GetSliceWeights(index int) int {
+	return [...]int{10, 20, 30}[index-1]
+}
+
+func GetSliceUpdatedWeights(index int) int {
+	return [...]int{15, 25, 35}[index-1]
+}
+
+func GetDrbID(index int) int {
+	return index + 5
+}
+
+func GetQci(index int) int {
+	return index + 9
+}

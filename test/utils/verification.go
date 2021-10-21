@@ -8,101 +8,97 @@ import (
 	"context"
 	"fmt"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
-	uenib_api "github.com/onosproject/onos-api/go/onos/uenib"
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/nib/uenib"
 	"strconv"
+	"strings"
 )
 
-func VerifyCase1CreatingSlice() error {
+func VerifySliceInitValuesForAllDUs(numSlices int) error {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return err
 	}
 
-	items, err := rnibClient.GetRsmSliceItemAspects(context.Background(), MockDUE2NodeID)
+	rsmAspects, err := rnibClient.GetRSMSliceItemAspectsForAllDUs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if len(items) < 1 {
-		return fmt.Errorf("there is no slice created - there should be one slice")
-	} else if len(items) > 1 {
-		return fmt.Errorf("there are multiple slices created - there should be one slice")
-	}
+	for k, v := range rsmAspects {
+		if len(v) != numSlices {
+			return fmt.Errorf("the number of created slices should be %d by default - currently %v has %v [%v]", numSlices, k, len(v), v)
+		}
 
-	if items[0].GetID() != Slice1ID {
-		return fmt.Errorf("slice ID %s is wrong - it should be %s", items[0].GetID(), Slice1ID)
-	}
+		for i := 0; i < numSlices; i++ {
+			if v[i].GetID() != fmt.Sprintf("%d", GetSliceID(i+1)) {
+				return fmt.Errorf("slice ID %v in %v is wrong - it should be %v", v[i].GetID(), k, fmt.Sprintf("%d", GetSliceID(i+1)))
+			}
 
-	if len(items[0].GetUeIdList()) != 0 {
-		return fmt.Errorf("UeIdList should be empty - UeIdList: %v", items[0].GetUeIdList())
-	}
+			if len(v[i].GetUeIdList()) != 0 {
+				return fmt.Errorf("UeIdList in %v should be empty - UeIdList: %v", k, v[0].GetUeIdList())
+			}
 
-	if items[0].GetSliceType() != topoapi.RSMSliceType(Slice1Type) {
-		return fmt.Errorf("slice type %v is wrong - it should be %v", items[0].GetSliceType(), topoapi.RSMSliceType(Slice1Type))
-	}
+			if v[i].GetSliceType() != topoapi.RSMSliceType(SliceType) {
+				return fmt.Errorf("slice type %v in %v is wrong - it should be %v", v[0].GetSliceType(), k, topoapi.RSMSliceType(SliceType))
+			}
 
-	slice1Weight1Int32, err := strconv.Atoi(Slice1Weight1)
-	if err != nil {
-		return err
-	}
-	if items[0].GetSliceParameters().GetWeight() != int32(slice1Weight1Int32) {
-		return fmt.Errorf("weight %v is wrong - it should be %v", items[0].GetSliceParameters().GetWeight(), int32(slice1Weight1Int32))
-	}
+			if v[i].GetSliceParameters().GetWeight() != int32(GetSliceWeights(i+1)) {
+				return fmt.Errorf("weight %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetWeight(), k, int32(GetSliceWeights(i+1)))
+			}
 
-	if items[0].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(Slice1Sched) {
-		return fmt.Errorf("scheduler type %v is wrong - it should be %v", items[0].GetSliceParameters().GetSchedulerType(), topoapi.RSMSchedulerType(Slice1Sched))
+			if v[i].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(SliceSched) {
+				return fmt.Errorf("scheduler type %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetSchedulerType(), k, topoapi.RSMSchedulerType(SliceSched))
+			}
+		}
 	}
 
 	return nil
 }
 
-func VerifyCase2UpdatingSlice() error {
+func VerifySliceUpdatedValuesForAllDUs(numSlices int) error {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return err
 	}
 
-	items, err := rnibClient.GetRsmSliceItemAspects(context.Background(), MockDUE2NodeID)
+	rsmAspects, err := rnibClient.GetRSMSliceItemAspectsForAllDUs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if len(items) < 1 {
-		return fmt.Errorf("there is no slice created - there should be one slice")
-	} else if len(items) > 1 {
-		return fmt.Errorf("there are multiple slices created - there should be one slice")
-	}
+	for k, v := range rsmAspects {
+		if len(v) != numSlices {
+			return fmt.Errorf("the number of created slices should be %d by default - currently %v has %v [%v]", numSlices, k, len(v), v)
+		}
 
-	if items[0].GetID() != Slice1ID {
-		return fmt.Errorf("slice ID %s is wrong - it should be %s", items[0].GetID(), Slice1ID)
-	}
+		for i := 0; i < numSlices; i++ {
+			if v[i].GetID() != fmt.Sprintf("%d", GetSliceID(i+1)) {
+				return fmt.Errorf("slice ID %v in %v is wrong - it should be %v", v[i].GetID(), k, fmt.Sprintf("%d", GetSliceID(i+1)))
+			}
 
-	if len(items[0].GetUeIdList()) != 0 {
-		return fmt.Errorf("UeIdList should be empty - UeIdList: %v", items[0].GetUeIdList())
-	}
+			if len(v[i].GetUeIdList()) != 0 {
+				return fmt.Errorf("UeIdList in %v should be empty - UeIdList: %v", k, v[0].GetUeIdList())
+			}
 
-	if items[0].GetSliceType() != topoapi.RSMSliceType(Slice1Type) {
-		return fmt.Errorf("slice type %v is wrong - it should be %v", items[0].GetSliceType(), topoapi.RSMSliceType(Slice1Type))
-	}
+			if v[i].GetSliceType() != topoapi.RSMSliceType(SliceType) {
+				return fmt.Errorf("slice type %v in %v is wrong - it should be %v", v[0].GetSliceType(), k, topoapi.RSMSliceType(SliceType))
+			}
 
-	slice1Weight1Int32, err := strconv.Atoi(Slice1Weight2)
-	if err != nil {
-		return err
-	}
-	if items[0].GetSliceParameters().GetWeight() != int32(slice1Weight1Int32) {
-		return fmt.Errorf("weight %v is wrong - it should be %v", items[0].GetSliceParameters().GetWeight(), int32(slice1Weight1Int32))
-	}
+			if v[i].GetSliceParameters().GetWeight() != int32(GetSliceUpdatedWeights(i+1)) {
+				return fmt.Errorf("weight %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetWeight(), k, int32(GetSliceUpdatedWeights(i+1)))
+			}
 
-	if items[0].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(Slice1Sched) {
-		return fmt.Errorf("scheduler type %v is wrong - it should be %v", items[0].GetSliceParameters().GetSchedulerType(), topoapi.RSMSchedulerType(Slice1Sched))
+			if v[i].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(SliceSched) {
+				return fmt.Errorf("scheduler type %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetSchedulerType(), k, topoapi.RSMSchedulerType(SliceSched))
+			}
+		}
 	}
 
 	return nil
 }
 
-func VerifyCase3AssociatingUEWithSlice() error {
+func VerifyUESliceAssociationForAllDUsAndUEs(numSlices int) error {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return err
@@ -112,94 +108,119 @@ func VerifyCase3AssociatingUEWithSlice() error {
 		return err
 	}
 
-	items, err := rnibClient.GetRsmSliceItemAspects(context.Background(), MockDUE2NodeID)
+	rsmAspects, err := rnibClient.GetRSMSliceItemAspectsForAllDUs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if len(items) < 1 {
-		return fmt.Errorf("there is no slice created - there should be one slice")
-	} else if len(items) > 1 {
-		return fmt.Errorf("there are multiple slices created - there should be one slice")
+	for k, v := range rsmAspects {
+		if len(v) != numSlices {
+			return fmt.Errorf("the number of created slices should be three by default - currently %v has %v [%v]", k, len(v), v)
+		}
+		for i := 0; i < numSlices; i++ {
+			if v[i].GetID() != fmt.Sprintf("%d", GetSliceID(i+1)) {
+				return fmt.Errorf("slice ID %v in %v is wrong - it should be %v", v[i].GetID(), k, fmt.Sprintf("%d", GetSliceID(i+1)))
+			}
+
+			if v[i].GetSliceType() != topoapi.RSMSliceType(SliceType) {
+				return fmt.Errorf("slice type %v in %v is wrong - it should be %v", v[0].GetSliceType(), k, topoapi.RSMSliceType(SliceType))
+			}
+
+			if v[i].GetSliceParameters().GetWeight() != int32(GetSliceUpdatedWeights(i+1)) {
+				return fmt.Errorf("weight %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetWeight(), k, int32(GetSliceUpdatedWeights(i+1)))
+			}
+
+			if v[i].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(SliceSched) {
+				return fmt.Errorf("scheduler type %v in %v is wrong - it should be %v", v[0].GetSliceParameters().GetSchedulerType(), k, topoapi.RSMSchedulerType(SliceSched))
+			}
+		}
 	}
 
-	if items[0].GetID() != Slice1ID {
-		return fmt.Errorf("slice ID %s is wrong - it should be %s", items[0].GetID(), Slice1ID)
-	}
-
-	if items[0].GetSliceType() != topoapi.RSMSliceType(Slice1Type) {
-		return fmt.Errorf("slice type %v is wrong - it should be %v", items[0].GetSliceType(), topoapi.RSMSliceType(Slice1Type))
-	}
-
-	slice1Weight1Int32, err := strconv.Atoi(Slice1Weight2)
-	if err != nil {
-		return err
-	}
-	if items[0].GetSliceParameters().GetWeight() != int32(slice1Weight1Int32) {
-		return fmt.Errorf("weight %v is wrong - it should be %v", items[0].GetSliceParameters().GetWeight(), int32(slice1Weight1Int32))
-	}
-
-	if items[0].GetSliceParameters().GetSchedulerType() != topoapi.RSMSchedulerType(Slice1Sched) {
-		return fmt.Errorf("scheduler type %v is wrong - it should be %v", items[0].GetSliceParameters().GetSchedulerType(), topoapi.RSMSchedulerType(Slice1Sched))
-	}
-
-	if len(items[0].GetUeIdList()) != 1 {
-		return fmt.Errorf("UeIdList should not be empty - UeIdList: %v", items[0].GetUeIdList())
-	}
-
-	rsmUEInfo, err := uenibClient.GetUEWithGlobalID(context.Background(), MockUEID)
+	rsmUEInfoAspects, err := uenibClient.GetUEs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if rsmUEInfo.DuE2NodeId != MockDUE2NodeID {
-		return fmt.Errorf("DuE2NodeID %v is wrong - it should be %v", rsmUEInfo.DuE2NodeId, MockDUE2NodeID)
-	}
+	for _, rsmUEInfoAspect := range rsmUEInfoAspects {
+		if _, ok := rsmAspects[rsmUEInfoAspect.GetDuE2NodeId()]; !ok {
+			return fmt.Errorf("UE %v does not have DuE2NodeID", rsmUEInfoAspect.GetGlobalUeID())
+		}
 
-	if rsmUEInfo.UeIdList.DuUeF1apID.Value != DUUEF1apID {
-		return fmt.Errorf("DuUeF1apID %v is wrong - it should be %v", rsmUEInfo.UeIdList.DuUeF1apID.Value, DUUEF1apID)
-	}
+		parsedUEIDIndex, err := strconv.Atoi(strings.Split(rsmUEInfoAspect.GetGlobalUeID(), "-")[4])
+		if err != nil {
+			return err
+		}
 
-	if len(rsmUEInfo.BearerIdList) != 1 {
-		return fmt.Errorf("BearerIdList should not be empty - BearerIdList: %v", rsmUEInfo.BearerIdList)
-	}
+		if rsmUEInfoAspect.GetUeIdList().GetCuUeF1apID().GetValue() != int64(GetCUUEF1apID(parsedUEIDIndex)) {
+			return fmt.Errorf("CU UE F1AP ID %v in UENIB %v is wrong. it should be %v", rsmUEInfoAspect.GetGlobalUeID(), rsmUEInfoAspect, GetCUUEF1apID(parsedUEIDIndex))
+		}
 
-	if rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetValue() != Ue1DrbID {
-		return fmt.Errorf("DrbID %v is wrong - it should be %v", rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetValue(), Ue1DrbID)
-	}
+		if rsmUEInfoAspect.GetUeIdList().GetDuUeF1apID().GetValue() != int64(GetDUUEF1apID(parsedUEIDIndex)) {
+			return fmt.Errorf("DU UE F1AP ID %v in UENIB %v is wrong. it should be %v", rsmUEInfoAspect.GetGlobalUeID(), rsmUEInfoAspect, GetCUUEF1apID(parsedUEIDIndex))
+		}
 
-	if rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetQci().GetValue() != Ue1Qci {
-		return fmt.Errorf("QCI %v is wrong - it should be %v", rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetQci().GetValue(), Ue1Qci)
-	}
+		for _, ueSlice := range rsmUEInfoAspect.GetSliceList() {
+			// slice ID check
+			hasSliceID := false
+			uenibDrbID := ueSlice.GetDrbId().GetFourGdrbId().GetValue()
+			uenibQci := ueSlice.GetDrbId().GetFourGdrbId().GetQci().GetValue()
+			uenibWeight := ueSlice.GetSliceParameters().GetWeight()
+			uenibSched := ueSlice.GetSliceParameters().GetSchedulerType()
 
-	if len(rsmUEInfo.GetSliceList()) != 1 {
-		return fmt.Errorf("SliceList should not be empty - SlistList: %v", rsmUEInfo.GetSliceList())
-	}
+			for _, topoSlice := range rsmAspects[rsmUEInfoAspect.GetDuE2NodeId()] {
+				if ueSlice.GetID() == topoSlice.GetID() {
+					hasUEID := false
+					var topoDrbID int32
+					var topoQci int32
+					var topoWeight int32
+					var topoSched topoapi.RSMSchedulerType
+					for _, ue := range topoSlice.GetUeIdList() {
+						if ue.GetDuUeF1apID().GetValue() == rsmUEInfoAspect.GetUeIdList().GetDuUeF1apID().GetValue() {
+							hasUEID = true
+							topoDrbID = ue.GetDrbId().GetFourGdrbId().GetValue()
+							topoQci = ue.GetDrbId().GetFourGdrbId().GetQci().GetValue()
+							topoWeight = topoSlice.GetSliceParameters().GetWeight()
+							topoSched = topoSlice.GetSliceParameters().GetSchedulerType()
+							break
+						}
+					}
+					if !hasUEID {
+						return fmt.Errorf("CU/DUUEID in topo %v is not matched with the CU/DUUEID in UENIB %v", topoSlice.GetUeIdList(), rsmUEInfoAspect.GetUeIdList().GetCuUeF1apID().GetValue())
+					}
 
-	if rsmUEInfo.GetSliceList()[0].GetID() != Slice1ID {
-		return fmt.Errorf("slice ID %v is wrong - it should be %v", rsmUEInfo.GetSliceList()[0].GetID(), Slice1ID)
-	}
+					// bearer ID check
+					if uenibDrbID != topoDrbID {
+						return fmt.Errorf("DRB-ID in topo %v and DRB-ID in uenib %v are not matched", topoDrbID, uenibDrbID)
+					}
 
-	if rsmUEInfo.GetSliceList()[0].GetDrbId().GetFourGdrbId().GetValue() != Ue1DrbID {
-		return fmt.Errorf("DrbID in slice list %v is wrong - it should be %v", rsmUEInfo.GetSliceList()[0].GetDrbId().GetFourGdrbId().GetValue(), Ue1DrbID)
-	}
+					if uenibQci != topoQci {
+						return fmt.Errorf("QCI in topo %v and QCI in uenib %v are not matched", topoDrbID, uenibDrbID)
+					}
 
-	if rsmUEInfo.GetSliceList()[0].GetDrbId().GetFourGdrbId().GetQci().GetValue() != Ue1Qci {
-		return fmt.Errorf("QCI in slice list %v is wrong - it should be %v", rsmUEInfo.GetSliceList()[0].GetDrbId().GetFourGdrbId().GetQci().GetValue(), Ue1Qci)
-	}
+					// scheduler check
+					if uenibWeight != topoWeight {
+						return fmt.Errorf("weight in topo %v and weight in uenib %v are not matched", topoWeight, uenibWeight)
+					}
 
-	if rsmUEInfo.GetSliceList()[0].GetSliceParameters().GetWeight() != int32(slice1Weight1Int32) {
-		return fmt.Errorf("weight in slice list %v is wrong - it should be %v", rsmUEInfo.GetSliceList()[0].GetSliceParameters().GetWeight(), int32(slice1Weight1Int32))
-	}
+					if uenibSched.String() != topoSched.String() {
+						return fmt.Errorf("scheduler type in topo %v and scheduler type in uenib %v are not matched", topoSched, uenibSched)
+					}
 
-	if rsmUEInfo.GetSliceList()[0].GetSliceParameters().GetSchedulerType() != uenib_api.RSMSchedulerType(Slice1Sched) {
-		return fmt.Errorf("scheduler type in slice list %v is wrong - it should be %v", items[0].GetSliceParameters().GetSchedulerType(), topoapi.RSMSchedulerType(Slice1Sched))
+					hasSliceID = true
+					break
+				}
+			}
+
+			if !hasSliceID {
+				return fmt.Errorf("slice ID in UENIB %v is not matched with the slice ID in topo %v", ueSlice.GetID(), rsmAspects[rsmUEInfoAspect.GetDuE2NodeId()])
+			}
+		}
 	}
 
 	return nil
 }
 
-func VerifyCase4DeletingSlice() error {
+func VerifySliceDeletedForAllDUsAfterUEAssociation() error {
 	rnibClient, err := rnib.NewClient()
 	if err != nil {
 		return err
@@ -209,42 +230,26 @@ func VerifyCase4DeletingSlice() error {
 		return err
 	}
 
-	items, err := rnibClient.GetRsmSliceItemAspects(context.Background(), MockDUE2NodeID)
+	rsmAspects, err := rnibClient.GetRSMSliceItemAspectsForAllDUs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if len(items) != 0 {
-		return fmt.Errorf("slice should be empty - %v", items)
+	for k, v := range rsmAspects {
+		if len(v) != 0 {
+			return fmt.Errorf("DU %v slice list should be empty - %v", k, v)
+		}
 	}
 
-	rsmUEInfo, err := uenibClient.GetUEWithGlobalID(context.Background(), MockUEID)
+	rsmUEInfoAspects, err := uenibClient.GetUEs(context.Background())
 	if err != nil {
 		return err
 	}
 
-	if rsmUEInfo.DuE2NodeId != MockDUE2NodeID {
-		return fmt.Errorf("DuE2NodeID %v is wrong - it should be %v", rsmUEInfo.DuE2NodeId, MockDUE2NodeID)
-	}
-
-	if rsmUEInfo.UeIdList.DuUeF1apID.Value != DUUEF1apID {
-		return fmt.Errorf("DuUeF1apID %v is wrong - it should be %v", rsmUEInfo.UeIdList.DuUeF1apID.Value, DUUEF1apID)
-	}
-
-	if len(rsmUEInfo.BearerIdList) != 1 {
-		return fmt.Errorf("BearerIdList should not be empty - BearerIdList: %v", rsmUEInfo.BearerIdList)
-	}
-
-	if rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetValue() != Ue1DrbID {
-		return fmt.Errorf("DrbID %v is wrong - it should be %v", rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetValue(), Ue1DrbID)
-	}
-
-	if rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetQci().GetValue() != Ue1Qci {
-		return fmt.Errorf("QCI %v is wrong - it should be %v", rsmUEInfo.BearerIdList[0].GetDrbId().GetFourGdrbId().GetQci().GetValue(), Ue1Qci)
-	}
-
-	if len(rsmUEInfo.GetSliceList()) != 0 {
-		return fmt.Errorf("SliceList should be empty - SliceList: %v", rsmUEInfo.GetSliceList())
+	for _, rsmUEInfoAspect := range rsmUEInfoAspects {
+		if len(rsmUEInfoAspect.GetSliceList()) != 0 {
+			return fmt.Errorf("SliceList for UE %v should be empty - SliceList: %v", rsmUEInfoAspect.GetGlobalUeID(), rsmUEInfoAspect.GetSliceList())
+		}
 	}
 
 	return nil

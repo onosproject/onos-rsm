@@ -30,7 +30,7 @@ type Client struct {
 	client uenib.UEServiceClient
 }
 
-func AddMockUE() error {
+func CreateMockUE(cuIndex int, duIndex int, index int) error {
 	client, err := NewUENibClient(context.Background(), TLSCrtPath, TLSKeyPath, "onos-uenib:5150")
 	if err != nil {
 		return err
@@ -42,9 +42,9 @@ func AddMockUE() error {
 			DrbId: &uenib_api.DrbId{
 				DrbId: &uenib_api.DrbId_FourGdrbId{
 					FourGdrbId: &uenib_api.FourGDrbId{
-						Value: Ue1DrbID,
+						Value: int32(GetDrbID(index)),
 						Qci: &uenib_api.Qci{
-							Value: Ue1Qci,
+							Value: int32(GetQci(index)),
 						},
 					},
 				},
@@ -52,17 +52,16 @@ func AddMockUE() error {
 		},
 	}
 	bIDList = append(bIDList, uenibBID)
-
-	ueID := MockUEID
+	ueID := GetMockUEID(index, cuIndex, duIndex)
 
 	rsmUEInfo := &uenib_api.RsmUeInfo{
 		GlobalUeID: ueID,
 		UeIdList: &uenib_api.UeIdentity{
 			CuUeF1apID: &uenib_api.CuUeF1ApID{
-				Value: CUUEF1apID,
+				Value: int64(GetCUUEF1apID(index)),
 			},
 			DuUeF1apID: &uenib_api.DuUeF1ApID{
-				Value: DUUEF1apID,
+				Value: int64(GetDUUEF1apID(index)),
 			},
 			RANUeNgapID: &uenib_api.RanUeNgapID{
 				Value: 0,
@@ -71,13 +70,13 @@ func AddMockUE() error {
 				Value: 0,
 			},
 			EnbUeS1apID: &uenib_api.EnbUeS1ApID{
-				Value: int32(0),
+				Value: 0,
 			},
 		},
 		BearerIdList: bIDList,
-		CellGlobalId: CellGlobalID,
-		CuE2NodeId:   MockCUE2NodeID,
-		DuE2NodeId:   MockDUE2NodeID,
+		CellGlobalId: GetCGI(index),
+		CuE2NodeId:   GetMockCUE2NodeID(cuIndex),
+		DuE2NodeId:   GetMockDUE2NodeID(duIndex),
 		SliceList:    make([]*uenib_api.SliceInfo, 0),
 	}
 

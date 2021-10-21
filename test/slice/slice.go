@@ -12,6 +12,10 @@ import (
 	"testing"
 )
 
+const (
+	numTestSlices = 1
+)
+
 func (s *TestSuite) TestSlice(t *testing.T) {
 
 	cfg := manager.Config{
@@ -34,55 +38,75 @@ func (s *TestSuite) TestSlice(t *testing.T) {
 	mgr := manager.NewManager(cfg)
 	mgr.Run()
 
-	t.Log("Adding Mock CU")
+	t.Log("Adding Mock 100 CUs")
 
-	err = utils.AddMockCUE2Node()
+	err = utils.CreateMockE2Node(1, utils.CUDUTypeCU)
 	assert.NoError(t, err)
 
 	t.Log("Adding Mock DU")
 
-	err = utils.AddMockDUE2Node()
+	err = utils.CreateMockE2Node(1, utils.CUDUTypeDU)
 	assert.NoError(t, err)
 
 	t.Log("Adding Mock UE")
 
-	err = utils.AddMockUE()
+	err = utils.CreateMockUE(1, 1, 1)
 	assert.NoError(t, err)
 
 	t.Log("Case 1: Creating Slice 1")
 
-	err = utils.CmdCreateSlice1()
+	err = utils.CmdCreateSlice(1, 1, 1, 1)
 	assert.NoError(t, err)
 
-	err = utils.VerifyCase1CreatingSlice()
+	t.Log("Waiting all slices created")
+
+	err = utils.VerifySliceInitValuesForAllDUs(numTestSlices)
 	assert.NoError(t, err)
 
+	if err != nil {
+		return
+	}
 	t.Log("Case 1 passed")
 
 	t.Log("Case 2: Updating Slice 1")
-	err = utils.CmdUpdateSlice1()
+	err = utils.CmdUpdateSlice(1, 1, 1, 1)
 	assert.NoError(t, err)
 
-	err = utils.VerifyCase2UpdatingSlice()
+	t.Log("Waiting all slices updated")
+
+	err = utils.VerifySliceUpdatedValuesForAllDUs(numTestSlices)
 	assert.NoError(t, err)
 
+	if err != nil {
+		return
+	}
 	t.Log("Case 2 passed")
 
 	t.Log("Case 3: Associating UE 1 with Slice 1")
-	err = utils.CmdAssociateUE1WithSlice1()
+	err = utils.CmdAssociateUEWithSlice(1, 1, 1, 1, 1)
 	assert.NoError(t, err)
 
-	err = utils.VerifyCase3AssociatingUEWithSlice()
+	t.Log("Waiting all slices associated")
+
+	err = utils.VerifyUESliceAssociationForAllDUsAndUEs(numTestSlices)
 	assert.NoError(t, err)
 
+	if err != nil {
+		return
+	}
 	t.Log("Case 3 passed")
 
 	t.Log("Case 4: Deleting Slice 1")
-	err = utils.CmdDeleteSlice1()
+	err = utils.CmdDeleteSlice(1, 1, 1, 1)
 	assert.NoError(t, err)
 
-	err = utils.VerifyCase4DeletingSlice()
+	t.Log("Waiting all slices deleted")
+
+	err = utils.VerifySliceDeletedForAllDUsAfterUEAssociation()
 	assert.NoError(t, err)
 
+	if err != nil {
+		return
+	}
 	t.Log("Case 4 passed")
 }

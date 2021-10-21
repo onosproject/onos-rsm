@@ -322,7 +322,7 @@ func (m *Manager) handleNbiUpdateSliceRequest(ctx context.Context, req *rsmapi.U
 }
 
 func (m *Manager) handleNbiDeleteSliceRequest(ctx context.Context, req *rsmapi.DeleteSliceRequest, nodeID topoapi.ID) error {
-	log.Infof("Called Update Slice: %v", req)
+	log.Infof("Called Delete Slice: %v", req)
 	sliceID, err := strconv.Atoi(req.SliceId)
 	if err != nil {
 		return fmt.Errorf("failed to convert slice id to int - %v", err.Error())
