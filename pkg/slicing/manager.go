@@ -449,10 +449,17 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 	}
 
 	cmdType := e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_UE_ASSOCIATE
-	dlSliceID, err := strconv.Atoi(req.DlSliceId)
-	if err != nil {
-		return fmt.Errorf("failed to convert slice id to int: %v", err)
+
+	hasDlSliceID := false
+	dlSliceID := 0
+	if req.DlSliceId != "" {
+		dlSliceID, err = strconv.Atoi(req.DlSliceId)
+		if err != nil {
+			return fmt.Errorf("failed to convert slice id to int: %v", err)
+		}
+		hasDlSliceID = true
 	}
+
 	hasUlSliceID := false
 	ulSliceID := 0
 	if req.UlSliceId != "" {
@@ -461,6 +468,10 @@ func (m *Manager) handleNbiSetUeSliceAssociationRequest(ctx context.Context, req
 			return fmt.Errorf("failed to convert slice id to int - %v", err)
 		}
 		hasUlSliceID = true
+	}
+
+	if !hasDlSliceID && !hasUlSliceID {
+		return fmt.Errorf("both DL slice ID and UL slice ID are empty: %v", *req)
 	}
 
 	var reqUeID int64
