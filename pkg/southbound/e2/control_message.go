@@ -41,7 +41,10 @@ func (c *ControlMessageHandler) CreateControlRequest(cmdType e2sm_rsm.E2SmRsmCom
 
 // CreateControlHeader creates the control message header
 func (c *ControlMessageHandler) CreateControlHeader(cmdType e2sm_rsm.E2SmRsmCommand) ([]byte, error) {
-	hdr := pdubuilder.CreateE2SmRsmControlHeader(cmdType)
+	hdr, err := pdubuilder.CreateE2SmRsmControlHeader(cmdType)
+	if err != nil {
+		return nil, err
+	}
 	hdrProtoBytes, err := proto.Marshal(hdr)
 	if err != nil {
 		return nil, err
@@ -56,25 +59,37 @@ func (c *ControlMessageHandler) CreateControlPayload(cmdType e2sm_rsm.E2SmRsmCom
 	var msgProtoBytes []byte
 	switch cmdType {
 	case e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_CREATE:
-		msg = pdubuilder.CreateE2SmRsmControlMessageSliceCreate(sliceConfig)
+		msg, err = pdubuilder.CreateE2SmRsmControlMessageSliceCreate(sliceConfig)
+		if err != nil {
+			return nil, err
+		}
 		msgProtoBytes, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
 	case e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_UPDATE:
-		msg = pdubuilder.CreateE2SmRsmControlMessageSliceUpdate(sliceConfig)
+		msg, err = pdubuilder.CreateE2SmRsmControlMessageSliceUpdate(sliceConfig)
+		if err != nil {
+			return nil, err
+		}
 		msgProtoBytes, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
 	case e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_SLICE_DELETE:
-		msg = pdubuilder.CreateE2SmRsmControlMessageSliceDelete(sliceConfig.GetSliceId().GetValue(), sliceConfig.GetSliceType())
+		msg, err = pdubuilder.CreateE2SmRsmControlMessageSliceDelete(sliceConfig.GetSliceId().GetValue(), sliceConfig.GetSliceType())
+		if err != nil {
+			return nil, err
+		}
 		msgProtoBytes, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
 	case e2sm_rsm.E2SmRsmCommand_E2_SM_RSM_COMMAND_UE_ASSOCIATE:
-		msg = pdubuilder.CreateE2SmRsmControlMessageSliceAssociate(sliceAssoc)
+		msg, err = pdubuilder.CreateE2SmRsmControlMessageSliceAssociate(sliceAssoc)
+		if err != nil {
+			return nil, err
+		}
 		msgProtoBytes, err = proto.Marshal(msg)
 		if err != nil {
 			return nil, err
