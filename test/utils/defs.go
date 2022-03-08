@@ -73,9 +73,9 @@ func GetSliceUpdatedWeights(index int) int {
 }
 
 func GetDrbID(index int) int {
-	return index + 5
+	return (index + 5)%200
 }
 
 func GetQci(index int) int {
-	return index + 9
+	return (index + 9)%200
 }
