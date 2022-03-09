@@ -7,6 +7,7 @@ package monitoring
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -21,7 +22,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var log = logging.GetLogger("monitoring")
+var log = logging.GetLogger()
 
 func NewMonitor(opts ...Option) *Monitor {
 	options := Options{}

@@ -7,6 +7,8 @@ package e2
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	prototypes "github.com/gogo/protobuf/types"
 	e2api "github.com/onosproject/onos-api/go/onos/e2t/e2/v1beta1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
@@ -21,10 +23,9 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/nib/rnib"
 	"github.com/onosproject/onos-rsm/pkg/nib/uenib"
 	"google.golang.org/protobuf/proto"
-	"strings"
 )
 
-var log = logging.GetLogger("e2", "manager")
+var log = logging.GetLogger()
 
 const (
 	oid = "1.3.6.1.4.1.53148.1.1.2.102"
