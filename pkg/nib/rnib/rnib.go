@@ -7,10 +7,11 @@ package rnib
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-api/go/onos/rsm"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"strings"
 
 	"github.com/onosproject/onos-lib-go/pkg/errors"
 
@@ -18,7 +19,7 @@ import (
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
 )
 
-var log = logging.GetLogger("rnib")
+var log = logging.GetLogger()
 
 func NewClient() (TopoClient, error) {
 	sdkClient, err := toposdk.NewClient()

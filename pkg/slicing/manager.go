@@ -7,6 +7,9 @@ package slicing
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	rsmapi "github.com/onosproject/onos-api/go/onos/rsm"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	uenib_api "github.com/onosproject/onos-api/go/onos/uenib"
@@ -17,11 +20,9 @@ import (
 	"github.com/onosproject/onos-rsm/pkg/nib/uenib"
 	"github.com/onosproject/onos-rsm/pkg/northbound"
 	"github.com/onosproject/onos-rsm/pkg/southbound/e2"
-	"strconv"
-	"time"
 )
 
-var log = logging.GetLogger("slicing", "manager")
+var log = logging.GetLogger()
 
 type Manager struct {
 	rsmMsgCh              chan *northbound.RsmMsg

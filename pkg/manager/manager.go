@@ -6,6 +6,9 @@ package manager
 
 import (
 	"context"
+	"strconv"
+	"strings"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	app "github.com/onosproject/onos-ric-sdk-go/pkg/config/app/default"
@@ -16,11 +19,9 @@ import (
 	nbi "github.com/onosproject/onos-rsm/pkg/northbound"
 	"github.com/onosproject/onos-rsm/pkg/slicing"
 	"github.com/onosproject/onos-rsm/pkg/southbound/e2"
-	"strconv"
-	"strings"
 )
 
-var log = logging.GetLogger("manager")
+var log = logging.GetLogger()
 
 // Config is a manager configuration
 type Config struct {

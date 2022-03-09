@@ -6,6 +6,7 @@ package config
 
 import (
 	"context"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	app "github.com/onosproject/onos-ric-sdk-go/pkg/config/app/default"
 	"github.com/onosproject/onos-ric-sdk-go/pkg/config/event"
@@ -13,7 +14,7 @@ import (
 	configutils "github.com/onosproject/onos-ric-sdk-go/pkg/config/utils"
 )
 
-var log = logging.GetLogger("config")
+var log = logging.GetLogger()
 
 const (
 	// ReportPeriodConfigPath report period config path

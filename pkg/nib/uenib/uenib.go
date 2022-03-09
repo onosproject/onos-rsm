@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/atomix/go-client/pkg/client/errors"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
@@ -15,10 +17,9 @@ import (
 	"github.com/onosproject/onos-api/go/onos/uenib"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
-	"io"
 )
 
-var log = logging.GetLogger("uenib")
+var log = logging.GetLogger()
 
 func NewClient(ctx context.Context, certPath string, keyPath string, uenibAddr string) (Client, error) {
 	conn, err := southbound.Connect(ctx, uenibAddr, certPath, keyPath)
