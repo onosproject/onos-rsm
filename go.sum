@@ -152,7 +152,6 @@ github.com/atomix/atomix-api v0.0.0-20191217054529-55159c51ab6e/go.mod h1:joWKUd
 github.com/atomix/atomix-api v0.0.0-20191219205733-d87d186a4fba/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
 github.com/atomix/atomix-api v0.0.0-20200114202737-fac5129dc110/go.mod h1:joWKUd0zIeYbAQ0vmYHGsnV03ZgRalhceHgnJ3EN0mI=
 github.com/atomix/atomix-api/go v0.4.4/go.mod h1:N6gtApjoC9bRS9m7dksdVQIWSKaNArAl5EiOoaTHnmw=
-github.com/atomix/atomix-api/go v0.4.5/go.mod h1:N6gtApjoC9bRS9m7dksdVQIWSKaNArAl5EiOoaTHnmw=
 github.com/atomix/atomix-api/go v0.4.9/go.mod h1:N6gtApjoC9bRS9m7dksdVQIWSKaNArAl5EiOoaTHnmw=
 github.com/atomix/atomix-go-client v0.0.0-20190827234201-188602d4e780/go.mod h1:/UAIApUE5+Ghzu8oBVcYUoz6nCosrRPa0eUlluBtKz0=
 github.com/atomix/atomix-go-client v0.0.0-20191002230120-837d618e27c5/go.mod h1:MoPkrAL33saKe2GbTi+NJgLzW7ejCwrrLDrYIwGYNcE=
@@ -160,9 +159,8 @@ github.com/atomix/atomix-go-client v0.0.0-20191015003555-98ae5ccbe7bd/go.mod h1:
 github.com/atomix/atomix-go-client v0.0.0-20191018192841-3644d110cbec/go.mod h1:bM51i8VXdxw3+vN5spPJWllkfsfpakHYo2bOkNj1xC4=
 github.com/atomix/atomix-go-client v0.0.0-20200114212658-58c359bc47b1/go.mod h1:STv1xDq3qpFABP1zE+9/R2kYuFamQWSGH18w6sfXNE4=
 github.com/atomix/atomix-go-framework v0.6.5/go.mod h1:EkESsxBGOTVYPghrcJSLa36a8Zq1Dnu8Mq56xcjXX/k=
-github.com/atomix/atomix-go-framework v0.7.0/go.mod h1:x0k+DV9H2y0l4t17jKTlejK6Ka8DYgbQd4wYYIP8dIE=
-github.com/atomix/atomix-go-framework v0.10.0 h1:QLmfN4R48Wz4S5z4vIEGRY8UnfC5+f2y3Ppz2PNwIsU=
 github.com/atomix/atomix-go-framework v0.10.0/go.mod h1:436lsH1qD1xMSb2achfp5171UESMc2ycFNO15EVxB3I=
+github.com/atomix/atomix-go-framework v0.10.1 h1:pNmo9SNG4v+WWLsnHJTYF8GfqHx/SK4sUEvKmdls/rc=
 github.com/atomix/atomix-go-framework v0.10.1/go.mod h1:436lsH1qD1xMSb2achfp5171UESMc2ycFNO15EVxB3I=
 github.com/atomix/atomix-go-local v0.0.0-20190827233944-938e35b06834/go.mod h1:qLBTOiVKoEqzYOjgxIgWFa+Hfa3SR+VexA6jGBcv0HA=
 github.com/atomix/atomix-go-local v0.0.0-20190828183508-3db728c0fc3b/go.mod h1:VnwyXJvHzUHuVzzTmPhZ6/ktbBnz3CZk3aKMX7VlTmY=
@@ -602,7 +600,6 @@ github.com/googleapis/gnostic v0.4.1 h1:DLJCy1n/vrD4HPjOvYcT8aYQXpPIzoRZONaYwyyc
 github.com/googleapis/gnostic v0.4.1/go.mod h1:LRhVm6pbyptWbWbuZ38d1eyptfvIytN3ir6b65WBswg=
 github.com/gophercloud/gophercloud v0.1.0/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
-github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
 github.com/gorilla/handlers v0.0.0-20150720190736-60c7bfde3e33 h1:893HsJqtxp9z1SF76gg6hY70hRY1wVlTSnC/h1yUDCo=
 github.com/gorilla/handlers v0.0.0-20150720190736-60c7bfde3e33/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
@@ -761,7 +758,6 @@ github.com/lyft/protoc-gen-star v0.5.2/go.mod h1:9toiA3cC7z5uVbODF7kEQ91Xn7XNFkV
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
-github.com/magiconair/properties v1.8.4/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
 github.com/magiconair/properties v1.8.5 h1:b6kJs+EmPFMYGkow9GiUyCyOvIwYetYJ3fSaWak/Gls=
 github.com/magiconair/properties v1.8.5/go.mod h1:y3VJvCyxH9uVvJTWEGAELF3aiYNyPKd5NZ3oSwXrF60=
 github.com/mailru/easyjson v0.0.0-20160728113105-d5b7844b561a/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
@@ -814,7 +810,6 @@ github.com/mitchellh/gox v0.4.0/go.mod h1:Sd9lOJ0+aimLBi73mGofS1ycjY8lL3uZM3JPS4
 github.com/mitchellh/iochan v1.0.0/go.mod h1:JwYml1nuB7xOzsp52dPpHFffvOCDupsG0QubkSMEySY=
 github.com/mitchellh/mapstructure v0.0.0-20160808181253-ca63d7c062ee/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
-github.com/mitchellh/mapstructure v1.3.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/mapstructure v1.4.1/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/mapstructure v1.4.2 h1:6h7AQ0yhTcIsmFmnAwQls75jp2Gzs4iB8W7pjMO+rqo=
 github.com/mitchellh/mapstructure v1.4.2/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
@@ -868,15 +863,11 @@ github.com/onosproject/onos-api/go v0.9.7/go.mod h1:0hdMkFFN2AyKLHMiJVP3ZE61QgSY
 github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm v0.8.7 h1:qcDMxkRukjQ7BacMqROp0rEOEpNlbwnf8OZ6JbZaCa4=
 github.com/onosproject/onos-e2-sm/servicemodels/e2sm_rsm v0.8.7/go.mod h1:9aFLZ2iiW9T+lpXx7zaF7qS1igla4EV8G0PAHTb1fOk=
 github.com/onosproject/onos-lib-go v0.7.18/go.mod h1:yEu+qDh+z1G6b9clPAjDLQNnBll8TMl8o2sFDBzk/fI=
-github.com/onosproject/onos-lib-go v0.7.22/go.mod h1:RbD0kyWQaFqcNlBNGInP1yRGcCVq1gaQsCTtkOptNK0=
 github.com/onosproject/onos-lib-go v0.8.1/go.mod h1:1klcUPfLoXPVu4fzM/sYi1V3Pggm2NRbY2fTzG2W1HY=
-github.com/onosproject/onos-lib-go v0.8.11 h1:qq4m7Re7DEMVw28Uf3WtBZRjIdqgvN8BZBrAE45MkZk=
 github.com/onosproject/onos-lib-go v0.8.11/go.mod h1:rWssBjfhahhHQy4wW5PBUtjTPwJlXAixHxgfq/3PO3E=
+github.com/onosproject/onos-lib-go v0.8.13 h1:kiGw1fjaeNxgclAuW21wBQwgAQ5NaXkrlg6Cw4g4dZw=
 github.com/onosproject/onos-lib-go v0.8.13/go.mod h1:rWssBjfhahhHQy4wW5PBUtjTPwJlXAixHxgfq/3PO3E=
-github.com/onosproject/onos-proxy v0.0.6/go.mod h1:sZIm78Hl3SY/3BakB/eUs/34l8Pv/VzeUUCtDU9fshM=
 github.com/onosproject/onos-proxy v0.1.0/go.mod h1:Julz7LLRkjnwIvioNEI1CjpujpxoA33vOdWSs0/wY9I=
-github.com/onosproject/onos-ric-sdk-go v0.7.34 h1:rVQC8HCffeRDwFnuNW0prPEY4mfcWi5dY6xkoHdl7zk=
-github.com/onosproject/onos-ric-sdk-go v0.7.34/go.mod h1:0LAN7UJXnQChJPMNo7kzvQ8GXc5mumQIzWZtGcFVo5c=
 github.com/onosproject/onos-ric-sdk-go v0.8.7 h1:ftf4JXQ5+TtMIUBQ+EZPDISQusdbfjqiS2NETUOWUBY=
 github.com/onosproject/onos-ric-sdk-go v0.8.7/go.mod h1:R3PpM6nLtjXIpXNwvf0gEOPMXioJpqqmjCxg3PmwCrg=
 github.com/onosproject/onos-test v0.6.5 h1:Agj90+x8Qclg92iDN7OUvof1qzr6YCHqHXGVxxAiyaQ=
@@ -922,7 +913,6 @@ github.com/pact-foundation/pact-go v1.0.4/go.mod h1:uExwJY4kCzNPcHRj+hCR/HBbOOIw
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
-github.com/pelletier/go-toml v1.8.1/go.mod h1:T2/BmBdy8dvIRq1a/8aqjN41wvWlN4lrapLU/GW4pbc=
 github.com/pelletier/go-toml v1.9.3/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml v1.9.4 h1:tjENF6MfZAg8e4ZmZTeWaWiT2vXtsoO6+iuOjFhECwM=
 github.com/pelletier/go-toml v1.9.4/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
@@ -1025,7 +1015,6 @@ github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
-github.com/smartystreets/assertions v1.2.0/go.mod h1:tcbTF8ujkAEcZ8TElKY+i30BzYlVhC/LOxJk7iOWnoo=
 github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
@@ -1036,7 +1025,6 @@ github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/afero v1.3.3/go.mod h1:5KUK8ByomD5Ti5Artl0RtHeI5pTF7MIDuXL3yY520V4=
 github.com/spf13/afero v1.3.4/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
-github.com/spf13/afero v1.4.1/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/afero v1.6.0 h1:xoax2sJ2DT8S8xA2paPFjDCScCNeWsg75VG0DLRreiY=
 github.com/spf13/afero v1.6.0/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/cast v1.3.0/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
