@@ -21,3 +21,5 @@ coverage.txt
 *coverage*.xml
 *-output.out
 vendor
+
+build/build-tools
