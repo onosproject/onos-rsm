@@ -55,6 +55,16 @@ kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-rsm:${ONOS_RSM_VERSION}
 
+helmit-slice: integration-test-namespace # @HELP run PCI tests locally
+	helmit test -n test ./cmd/onos-rsm-tests --timeout 30m --no-teardown \
+			--suite slice
+
+helmit-scalability: integration-test-namespace # @HELP run PCI tests locally
+	helmit test -n test ./cmd/onos-rsm-tests --timeout 30m --no-teardown \
+			--suite scalability
+
+integration-tests: helmit-slice helmit-scalability
+
 all: build images
 
 publish: # @HELP publish version on github and dockerhub
