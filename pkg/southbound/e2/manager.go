@@ -109,8 +109,7 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 		log.Debugf("Received topo event: type %v, message %v", topoEvent.Type, topoEvent)
 		switch topoEvent.Type {
 		case topoapi.EventType_ADDED, topoapi.EventType_NONE:
-			relation := topoEvent.Object.Obj.(*topoapi.Object_Relation)
-			e2NodeID := relation.Relation.TgtEntityID
+			e2NodeID := topoEvent.Object.ID
 			log.Debugf("New E2NodeID %v connected", e2NodeID)
 			rsmSupportedCfgs, err := m.rnibClient.GetSupportedSlicingConfigTypes(ctx, e2NodeID)
 			if err != nil {
