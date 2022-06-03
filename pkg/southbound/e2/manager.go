@@ -143,8 +143,7 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 				}
 			}
 		case topoapi.EventType_REMOVED:
-			relation := topoEvent.Object.Obj.(*topoapi.Object_Relation)
-			e2NodeID := relation.Relation.TgtEntityID
+			e2NodeID := topoEvent.Object.ID
 			log.Infof("E2 node %v is disconnected", e2NodeID)
 			// Clean up slice information from onos-topo
 			duE2NodeID, err := m.rnibClient.GetTargetDUE2NodeID(ctx, e2NodeID)

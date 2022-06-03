@@ -259,7 +259,7 @@ func (t *topoClient) WatchE2Connections(ctx context.Context, ch chan topoapi.Eve
 }
 
 func getE2NodeFilter() *topoapi.Filters {
-	controlRelationFilter := &topoapi.Filters{
+	e2NodeFilter := &topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
 				Equal_: &topoapi.EqualFilter{
@@ -268,7 +268,7 @@ func getE2NodeFilter() *topoapi.Filters {
 			},
 		},
 	}
-	return controlRelationFilter
+	return e2NodeFilter
 }
 
 func (t *topoClient) GetTargetDUE2NodeID(ctx context.Context, cuE2NodeID topoapi.ID) (topoapi.ID, error) {
