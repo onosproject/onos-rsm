@@ -251,14 +251,14 @@ func (t *topoClient) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*
 }
 
 func (t *topoClient) WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error {
-	err := t.client.Watch(ctx, ch, toposdk.WithWatchFilters(getControlRelationFilter()))
+	err := t.client.Watch(ctx, ch, toposdk.WithWatchFilters(getE2NodeFilter()))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getControlRelationFilter() *topoapi.Filters {
+func getE2NodeFilter() *topoapi.Filters {
 	controlRelationFilter := &topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
