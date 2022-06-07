@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2022-present Intel Corporation
 // SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -46,6 +47,7 @@ type TopoClient interface {
 	GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error)
 	DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error
 	GetRSMSliceItemAspectsForAllDUs(ctx context.Context) (map[string][]*topoapi.RSMSlicingItem, error)
+	HasRSMRANFunction(ctx context.Context, nodeID topoapi.ID, oid string) bool
 }
 
 type topoClient struct {
@@ -67,6 +69,21 @@ func (t *topoClient) DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) 
 	}
 
 	return nil
+}
+
+func (t *topoClient) HasRSMRANFunction(ctx context.Context, nodeID topoapi.ID, oid string) bool {
+	e2Node, err := t.GetE2NodeAspects(ctx, nodeID)
+	if err != nil {
+		log.Warn(err)
+		return false
+	}
+
+	for _, sm := range e2Node.GetServiceModels() {
+		if sm.OID == oid {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *topoClient) GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error) {
@@ -258,7 +275,7 @@ func (t *topoClient) WatchE2Connections(ctx context.Context, ch chan topoapi.Eve
 }
 
 func getControlRelationFilter() *topoapi.Filters {
-	controlRelationFilter := &topoapi.Filters{
+	filter := &topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
 				Equal_: &topoapi.EqualFilter{
@@ -267,7 +284,7 @@ func getControlRelationFilter() *topoapi.Filters {
 			},
 		},
 	}
-	return controlRelationFilter
+	return filter
 }
 
 func (t *topoClient) GetTargetDUE2NodeID(ctx context.Context, cuE2NodeID topoapi.ID) (topoapi.ID, error) {

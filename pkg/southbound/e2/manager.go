@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2022-present Intel Corporation
 // SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -111,6 +112,11 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 		case topoapi.EventType_ADDED, topoapi.EventType_NONE:
 			relation := topoEvent.Object.Obj.(*topoapi.Object_Relation)
 			e2NodeID := relation.Relation.TgtEntityID
+			if !m.rnibClient.HasRSMRANFunction(ctx, e2NodeID, oid) {
+				log.Debugf("Received topo event does not have RSM RAN function - %v", topoEvent)
+				continue
+			}
+
 			log.Debugf("New E2NodeID %v connected", e2NodeID)
 			rsmSupportedCfgs, err := m.rnibClient.GetSupportedSlicingConfigTypes(ctx, e2NodeID)
 			if err != nil {
@@ -145,6 +151,11 @@ func (m *Manager) watchE2Connections(ctx context.Context) error {
 		case topoapi.EventType_REMOVED:
 			relation := topoEvent.Object.Obj.(*topoapi.Object_Relation)
 			e2NodeID := relation.Relation.TgtEntityID
+			if !m.rnibClient.HasRSMRANFunction(ctx, e2NodeID, oid) {
+				log.Debugf("Received topo event does not have RSM RAN function - %v", topoEvent)
+				continue
+			}
+
 			log.Infof("E2 node %v is disconnected", e2NodeID)
 			// Clean up slice information from onos-topo
 			duE2NodeID, err := m.rnibClient.GetTargetDUE2NodeID(ctx, e2NodeID)
