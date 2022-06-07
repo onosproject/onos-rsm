@@ -47,6 +47,7 @@ type TopoClient interface {
 	GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error)
 	DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) error
 	GetRSMSliceItemAspectsForAllDUs(ctx context.Context) (map[string][]*topoapi.RSMSlicingItem, error)
+	HasRSMRANFunction(ctx context.Context, nodeID topoapi.ID, oid string) bool
 }
 
 type topoClient struct {
@@ -68,6 +69,21 @@ func (t *topoClient) DeleteRsmSliceList(ctx context.Context, nodeID topoapi.ID) 
 	}
 
 	return nil
+}
+
+func (t *topoClient) HasRSMRANFunction(ctx context.Context, nodeID topoapi.ID, oid string) bool {
+	e2Node, err := t.GetE2NodeAspects(ctx, nodeID)
+	if err != nil {
+		log.Warn(err)
+		return false
+	}
+
+	for _, sm := range e2Node.GetServiceModels() {
+		if sm.OID == oid {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *topoClient) GetRsmSliceItemAspects(ctx context.Context, nodeID topoapi.ID) ([]*topoapi.RSMSlicingItem, error) {
@@ -251,24 +267,24 @@ func (t *topoClient) GetE2NodeAspects(ctx context.Context, nodeID topoapi.ID) (*
 }
 
 func (t *topoClient) WatchE2Connections(ctx context.Context, ch chan topoapi.Event) error {
-	err := t.client.Watch(ctx, ch, toposdk.WithWatchFilters(getE2NodeFilter()))
+	err := t.client.Watch(ctx, ch, toposdk.WithWatchFilters(getControlRelationFilter()))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getE2NodeFilter() *topoapi.Filters {
-	e2NodeFilter := &topoapi.Filters{
+func getControlRelationFilter() *topoapi.Filters {
+	filter := &topoapi.Filters{
 		KindFilter: &topoapi.Filter{
 			Filter: &topoapi.Filter_Equal_{
 				Equal_: &topoapi.EqualFilter{
-					Value: topoapi.E2NODE,
+					Value: topoapi.CONTROLS,
 				},
 			},
 		},
 	}
-	return e2NodeFilter
+	return filter
 }
 
 func (t *topoClient) GetTargetDUE2NodeID(ctx context.Context, cuE2NodeID topoapi.ID) (topoapi.ID, error) {
