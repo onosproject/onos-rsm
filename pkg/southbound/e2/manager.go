@@ -331,7 +331,7 @@ func (m *Manager) watchCtrlSliceCreated(ctx context.Context, e2NodeID topoapi.ID
 	for ctrlReqMsg := range m.ctrlReqChsSliceCreate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
 		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg, nil)
 		if err != nil {
 			log.Warnf("Error sending control message - %v", err)
 			ack := Ack{
@@ -360,7 +360,7 @@ func (m *Manager) watchCtrlSliceUpdated(ctx context.Context, e2NodeID topoapi.ID
 	for ctrlReqMsg := range m.ctrlReqChsSliceUpdate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
 		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg, nil)
 		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
 		if err != nil {
 			log.Warnf("Error sending control message - %v", err)
@@ -390,7 +390,7 @@ func (m *Manager) watchCtrlSliceDeleted(ctx context.Context, e2NodeID topoapi.ID
 	for ctrlReqMsg := range m.ctrlReqChsSliceDelete[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
 		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg, nil)
 		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
 		if err != nil {
 			log.Warnf("Error sending control message - %v", err)
@@ -420,7 +420,7 @@ func (m *Manager) watchCtrlUEAssociate(ctx context.Context, e2NodeID topoapi.ID)
 	for ctrlReqMsg := range m.ctrlReqChsUeAssociate[string(e2NodeID)] {
 		log.Debugf("ctrlReqMsg: %v", ctrlReqMsg)
 		node := m.e2Client.Node(e2client.NodeID(e2NodeID))
-		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg)
+		ctrlRespMsg, err := node.Control(ctx, ctrlReqMsg.CtrlMsg, nil)
 		log.Debugf("ctrlRespMsg: %v", ctrlRespMsg)
 		if err != nil {
 			log.Warnf("Error sending control message - %v", err)
