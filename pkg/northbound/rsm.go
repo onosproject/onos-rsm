@@ -43,7 +43,7 @@ type Server struct {
 	rsmReqCh    chan *RsmMsg
 }
 
-func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequest) (*rsmapi.CreateSliceResponse, error) {
+func (s Server) CreateSlice(_ context.Context, request *rsmapi.CreateSliceRequest) (*rsmapi.CreateSliceResponse, error) {
 	ackCh := make(chan Ack)
 	msg := &RsmMsg{
 		NodeID:  topoapi.ID(request.E2NodeId),
@@ -63,7 +63,7 @@ func (s Server) CreateSlice(ctx context.Context, request *rsmapi.CreateSliceRequ
 	}, nil
 }
 
-func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequest) (*rsmapi.UpdateSliceResponse, error) {
+func (s Server) UpdateSlice(_ context.Context, request *rsmapi.UpdateSliceRequest) (*rsmapi.UpdateSliceResponse, error) {
 	ackCh := make(chan Ack)
 	msg := &RsmMsg{
 		NodeID:  topoapi.ID(request.E2NodeId),
@@ -83,7 +83,7 @@ func (s Server) UpdateSlice(ctx context.Context, request *rsmapi.UpdateSliceRequ
 	}, nil
 }
 
-func (s Server) DeleteSlice(ctx context.Context, request *rsmapi.DeleteSliceRequest) (*rsmapi.DeleteSliceResponse, error) {
+func (s Server) DeleteSlice(_ context.Context, request *rsmapi.DeleteSliceRequest) (*rsmapi.DeleteSliceResponse, error) {
 	ackCh := make(chan Ack)
 	msg := &RsmMsg{
 		NodeID:  topoapi.ID(request.E2NodeId),
@@ -103,7 +103,7 @@ func (s Server) DeleteSlice(ctx context.Context, request *rsmapi.DeleteSliceRequ
 	}, nil
 }
 
-func (s Server) SetUeSliceAssociation(ctx context.Context, request *rsmapi.SetUeSliceAssociationRequest) (*rsmapi.SetUeSliceAssociationResponse, error) {
+func (s Server) SetUeSliceAssociation(_ context.Context, request *rsmapi.SetUeSliceAssociationRequest) (*rsmapi.SetUeSliceAssociationResponse, error) {
 	ackCh := make(chan Ack)
 	msg := &RsmMsg{
 		NodeID:  topoapi.ID(request.E2NodeId),

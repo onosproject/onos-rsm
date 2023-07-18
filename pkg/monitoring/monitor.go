@@ -103,7 +103,7 @@ func (m *Monitor) processIndication(ctx context.Context, indMsg e2api.Indication
 	return nil
 }
 
-func (m *Monitor) processMetricTypeMessage(ctx context.Context, indHdr *e2sm_rsm.E2SmRsmIndicationHeaderFormat1, indMsg *e2sm_rsm.E2SmRsmIndicationMessageFormat1) error {
+func (m *Monitor) processMetricTypeMessage(_ context.Context, indHdr *e2sm_rsm.E2SmRsmIndicationHeaderFormat1, indMsg *e2sm_rsm.E2SmRsmIndicationMessageFormat1) error {
 
 	log.Debugf("Received indication message (Metric) hdr: %v / msg: %v", indHdr, indMsg)
 
