@@ -18,7 +18,7 @@ COPY build/build-tools/ /go/src/github.com/onosproject/onos-rsm/build/build-tool
 
 RUN cd /go/src/github.com/onosproject/onos-rsm && GOFLAGS=-mod=vendor make ${ONOS_MAKE_TARGET}
 
-FROM frolvlad/alpine-glibc:alpine-3.12
+FROM frolvlad/alpine-glibc:alpine-3.19
 
 USER nobody
 
