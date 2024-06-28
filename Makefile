@@ -1,80 +1,67 @@
-# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
-#
 # SPDX-License-Identifier: Apache-2.0
+# Copyright 2019 Open Networking Foundation
+# Copyright 2024 Intel Corporation
 
 export CGO_ENABLED=1
 export GO111MODULE=on
 
 .PHONY: build
 
-ONOS_RSM_VERSION := latest
+ONOS_RSM_VERSION ?= latest
 ONOS_BUILD_VERSION := v0.6.6
 ONOS_PROTOC_VERSION := v0.6.6
 BUF_VERSION := 0.27.1
 
-build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
-include ./build/build-tools/make/onf-common.mk
+GOLANG_CI_VERSION := v1.52.2
+
+all: build images
 
 build: # @HELP build the Go binaries and run all validations (default)
-build:
 	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/onos-rsm ./cmd/onos-rsm
 
 test: # @HELP run the unit tests and source code validation
-test: build deps linters license
+test: build lint license
 	go test -race github.com/onosproject/onos-rsm/pkg/...
 	go test -race github.com/onosproject/onos-rsm/cmd/...
 
-jenkins-test:  # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: deps license linters
-	TEST_PACKAGES=github.com/onosproject/onos-rsm/... ./build/build-tools/build/jenkins/make-unit
-
-buflint: #@HELP run the "buf check lint" command on the proto files in 'api'
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-rsm \
-		-w /go/src/github.com/onosproject/onos-rsm/api \
-		bufbuild/buf:${BUF_VERSION} check lint
-
-protos: # @HELP compile the protobuf files (using protoc-go Docker)
-protos:
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-rsm \
-		-w /go/src/github.com/onosproject/onos-rsm \
-		--entrypoint build/bin/compile-protos.sh \
-		onosproject/protoc-go:${ONOS_PROTOC_VERSION}
-
-onos-rsm-docker: # @HELP build onos-rsm Docker image
-onos-rsm-docker:
+docker-build-onos-rsm: # @HELP build onos-rsm Docker image
 	@go mod vendor
 	docker build . -f build/onos-rsm/Dockerfile \
 		-t onosproject/onos-rsm:${ONOS_RSM_VERSION}
 	@rm -rf vendor
 
-images: # @HELP build all Docker images
-images: build onos-rsm-docker
+docker-build: # @HELP build all Docker images
+docker-build: build docker-build-onos-rsm
 
-kind: # @HELP build Docker images and add them to the currently configured kind cluster
-kind: images
-	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-rsm:${ONOS_RSM_VERSION}
+docker-push-onos-rsm: # @HELP push onos-rsm Docker image
+	docker push onosproject/onos-rsm:${ONOS_RSM_VERSION}
 
-helmit-slice: integration-test-namespace # @HELP run PCI tests locally
-	helmit test -n test ./cmd/onos-rsm-tests --timeout 30m --no-teardown \
-			--suite slice
+docker-push: # @HELP push docker images
+docker-push: docker-push-onos-rsm
 
-helmit-scalability: integration-test-namespace # @HELP run PCI tests locally
-	helmit test -n test ./cmd/onos-rsm-tests --timeout 30m --no-teardown \
-			--suite scalability
+lint: # @HELP examines Go source code and reports coding problems
+	golangci-lint --version | grep $(GOLANG_CI_VERSION) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin $(GOLANG_CI_VERSION)
+	golangci-lint run --timeout 15m
 
-integration-tests: helmit-slice helmit-scalability
+license: # @HELP run license checks
+	rm -rf venv
+	python3 -m venv venv
+	. ./venv/bin/activate;\
+	python3 -m pip install --upgrade pip;\
+	python3 -m pip install reuse;\
+	reuse lint
 
-all: build images
+check-version: # @HELP check version is duplicated
+	./build/bin/version_check.sh all
 
-publish: # @HELP publish version on github and dockerhub
-	./build/build-tools/publish-version ${VERSION} onosproject/onos-rsm
+clean: # @HELP remove all the build artifacts
+	rm -rf ./build/_output ./vendor ./cmd/onos-rsm/onos-rsm ./cmd/onos/onos venv
+	go clean github.com/onosproject/onos-rsm/...
 
-jenkins-publish:  # @HELP Jenkins calls this to publish artifacts
-	./build/bin/push-images
-	./build/build-tools/release-merge-commit
-
-clean:: # @HELP remove all the build artifacts
-	rm -rf ./build/_output ./vendor ./cmd/onos-rsm/onos-rsm ./cmd/onos/onos
-	go clean -testcache github.com/onosproject/onos-rsm/...
-
+help:
+	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \
+    | sort \
+    | awk ' \
+        BEGIN {FS = ": *# *@HELP"}; \
+        {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}; \
+    '

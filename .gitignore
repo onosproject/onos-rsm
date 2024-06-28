@@ -21,5 +21,6 @@ coverage.txt
 *coverage*.xml
 *-output.out
 vendor
+venv
 
 build/build-tools
