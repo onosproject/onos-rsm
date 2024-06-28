@@ -14,7 +14,7 @@ COPY cmd/ /go/src/github.com/onosproject/onos-rsm/cmd/
 COPY pkg/ /go/src/github.com/onosproject/onos-rsm/pkg/
 COPY vendor/ /go/src/github.com/onosproject/onos-rsm/vendor/
 COPY api/ /go/src/github.com/onosproject/onos-rsm/api
-COPY build/build-tools/ /go/src/github.com/onosproject/onos-rsm/build/build-tools/
+COPY build/ /go/src/github.com/onosproject/onos-rsm/build/
 
 RUN cd /go/src/github.com/onosproject/onos-rsm && GOFLAGS=-mod=vendor make ${ONOS_MAKE_TARGET}
 
