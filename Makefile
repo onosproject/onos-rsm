@@ -14,7 +14,7 @@ BUF_VERSION := 0.27.1
 
 GOLANG_CI_VERSION := v1.52.2
 
-all: build images
+all: build docker-build
 
 build: # @HELP build the Go binaries and run all validations (default)
 	GOPRIVATE="github.com/onosproject/*" go build -o build/_output/onos-rsm ./cmd/onos-rsm
